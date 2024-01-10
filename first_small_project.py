@@ -121,8 +121,6 @@ result = tokenizer.batch_decode(outputs, skip_special_tokens=True)[0]
 #result = result.split("<end_answer>")[0].strip()
 logging.info("Testing that inference works:\n" + result)
 
-"""Note: Pythia70M ends up in loops every time, I'm gonna need something bigger"""
-
 # Define a custom training loop
 # def compute_loss(model, inputs):
 #     outputs = model(inputs.input_ids, inputs.attention_mask, inputs=input_ids)
