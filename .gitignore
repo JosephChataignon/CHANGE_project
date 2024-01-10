@@ -1,5 +1,6 @@
 # project-specific
 logs/*
+.git_token
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
