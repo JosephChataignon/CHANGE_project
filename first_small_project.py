@@ -52,8 +52,8 @@ debug_str = f"Now using device: {device}"
 if device.type == 'cuda':
     debug_str += '\n\t'+torch.cuda.get_device_name(0)
     debug_str += '\n\tMemory Usage:'
-    debug_str += '\n\t\tAllocated:', round(torch.cuda.memory_allocated(0)/1024**3,1), 'GB'
-    debug_str += '\n\t\tCached:   ', round(torch.cuda.memory_reserved(0)/1024**3,1), 'GB'
+    debug_str += f'\n\t\tAllocated: {round(torch.cuda.memory_allocated(0)/1024**3,1)} GB'
+    debug_str += f'\n\t\tCached:    {round(torch.cuda.memory_reserved(0) /1024**3,1)} GB'
 logging.debug(debug_str)
 logging.debug(f'\tDefault location for tensors: {torch.rand(3).device}')
 torch.set_default_tensor_type(torch.cuda.FloatTensor) #change default tensor type
