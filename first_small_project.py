@@ -35,7 +35,10 @@ from datasets import load_metric
 
 # setting up logging
 start_time = datetime.now()
-logging.basicConfig(level=logging.DEBUG, filename=f'{os.path.dirname(os.path.abspath(__file__))}/logs/{start_time}_{os.path.basename(__file__)}.log', format= '%(asctime)s %(levelname)s : %(message)s')
+try:
+    logging.basicConfig(level=logging.DEBUG, filename=f'{os.path.dirname(os.path.abspath(__file__))}/logs/{start_time}_{os.path.basename(__file__)}.log', format= '%(asctime)s %(levelname)s : %(message)s')
+except:
+    print("assuming this is a live session, logging only to console - not working yet") #TODO fix
 root_logger = logging.getLogger()
 handler = logging.StreamHandler(sys.stdout)
 handler.setLevel(logging.INFO)
@@ -88,9 +91,9 @@ metric = load_metric("accuracy")
 model.to(device)
 
 # fix tokenizer issue
-if tokenizer.pad_token is None:
-    tokenizer.add_special_tokens({'pad_token': '[PAD]'})
-    model.resize_token_embeddings(len(tokenizer))
+# if tokenizer.pad_token is None:
+#     tokenizer.add_special_tokens({'pad_token': '[PAD]'})
+#     model.resize_token_embeddings(len(tokenizer))
 
 # Load dataset
 train_file = data_dir + "train_dataset.txt"
@@ -112,7 +115,7 @@ prompt = 'Once upon a time, there was a'
 inputs = tokenizer(prompt, return_tensors="pt")
 logging.debug(f"inputs are in CUDA: {inputs[0].is_cuda}")
 inputs = {k: v.to(device) for k, v in inputs.items()}  # Move input tensors to GPU
-logging.debug(f"inputs are in CUDA now: {inputs[0].is_cuda}")
+logging.debug(f"inputs are in CUDA now: {inputs.input_ids.is_cuda}") # inputs[0].is_cuda if bugs ?
 logging.debug(f"model is in CUDA: {all(p.is_cuda for p in model.parameters())}")
 outputs = model.generate(
     **inputs, max_new_tokens=100
