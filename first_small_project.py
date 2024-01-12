@@ -80,8 +80,8 @@ with open(data_dir + file_name, 'r') as f:
 #logging.info('extract text from Walser: '+walser_text[:50])
 
 # Load model directly from huggingface's repo
-tokenizer = AutoTokenizer.from_pretrained("EleutherAI/pythia-70m")
-model = AutoModelForCausalLM.from_pretrained("EleutherAI/pythia-70m")
+tokenizer = AutoTokenizer.from_pretrained("EleutherAI/pythia-2.8b")
+model = AutoModelForCausalLM.from_pretrained("EleutherAI/pythia-2.8b")
 metric = load_metric("accuracy")
 
 # move it to the GPU
@@ -163,8 +163,8 @@ trainer.log_metrics("all", metrics)
 trainer.save_metrics("all", metrics)
 
 # Save the fine-tuned model
-model.save_pretrained( data_dir + "fine_tuned_pythia-70m-Walser")
-tokenizer.save_pretrained( data_dir + "fine_tuned_pythia-70m-Walser") #i did not change the tokenizer ?
+model.save_pretrained( data_dir + "fine_tuned_pythia-2.8b-Walser")
+tokenizer.save_pretrained( data_dir + "fine_tuned_pythia-2.8b-Walser") #i did not change the tokenizer ?
 logging.info('model saved')
 
 # load for inference
