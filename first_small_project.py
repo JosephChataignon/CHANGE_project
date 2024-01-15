@@ -87,8 +87,8 @@ with open(data_dir + file_name, 'r') as f:
 #logging.info('extract text from Walser: '+walser_text[:50])
 
 # Load model directly from huggingface's repo
-tokenizer = AutoTokenizer.from_pretrained("EleutherAI/pythia-1.4b")
-model = AutoModelForCausalLM.from_pretrained("EleutherAI/pythia-1.4b")
+tokenizer = AutoTokenizer.from_pretrained("EleutherAI/pythia-70m")
+model = AutoModelForCausalLM.from_pretrained("EleutherAI/pythia-70m")
 metric = load_metric("accuracy")
 
 # move it to the GPU
