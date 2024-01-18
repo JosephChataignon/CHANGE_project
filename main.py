@@ -18,18 +18,21 @@ import os, sys, copy, logging
 #from transformers.utils import logging
 from datetime import datetime, timedelta
 from tqdm import tqdm
-from dotenv import load_dotenv
+from dotenv import load_dotenv, dotenv_values
 
 from datasets import load_dataset
 from datasets import load_metric
 
+# in interactive sessions, uncomment this line:
+#sys.path.insert(0, r'/path/to/code/folder')
 from logging_utils import setup_logging, display_CUDA_info
 from data import get_CHANGE_data
 
 ## Load environment variables
-load_dotenv()
-LOGS_FOLDER = os.getenv('LOGS_FOLDER')
-SAVED_MODELS_DIR = os.getenv('SAVED_MODELS_DIR')
+env_file = '.env' # for interactive sessions change to the correct path
+config  = dotenv_values(env_file)
+assert 'LOGS_FOLDER' in config, f'Could not find variable LOGS_FOLDER in .env file: {env_file}'
+assert 'SAVED_MODELS_DIR' in config, f'Could not find variable SAVED_MODELS_DIR in .env file: {env_file}'
 
 start_time = datetime.now()
 
@@ -56,8 +59,9 @@ start_time = datetime.now()
 #     print("Assuming this is a live session, logging only to console")
 #     root_logger.setLevel(logging.DEBUG)
 date_str = start_time.isoformat()[:19]
-log_file = f'{LOGS_FOLDER}/{date_str}_{os.path.basename(__file__)}.log'
-setup_logging(log_file)
+log_file = f"{config['LOGS_FOLDER']}/{date_str}_{os.path.basename(__file__)}.log"
+root_logger = logging.getLogger()
+setup_logging(log_file, root_logger)
 
 
 logging.info(f"{start_time} - Imports finished, starting script\n\n")
@@ -195,9 +199,9 @@ trainer.log_metrics("all", metrics)
 trainer.save_metrics("all", metrics)
 
 # Save the fine-tuned model
-model.save_pretrained(f"{SAVED_MODELS_DIR}/{instance_name}")
-tokenizer.save_pretrained(f"{SAVED_MODELS_DIR}/{instance_name}") #i did not change the tokenizer ?
-logging.info(f'model saved at {SAVED_MODELS_DIR}/{instance_name}')
+model.save_pretrained(f"{config['SAVED_MODELS_DIR']}/{instance_name}")
+tokenizer.save_pretrained(f"{config['SAVED_MODELS_DIR']}/{instance_name}") #i did not change the tokenizer ?
+logging.info(f"model saved at {config['SAVED_MODELS_DIR']}/{instance_name}")
 
 # load for inference
 #tokenizer = AutoTokenizer.from_pretrained(data_dir + "fine_tuned_pythia-70m-Walser")

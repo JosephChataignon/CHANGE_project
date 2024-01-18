@@ -1,5 +1,6 @@
 # project-specific
-logs/*
+logs/
+saved_models/
 .git_token
 
 # Byte-compiled / optimized / DLL files

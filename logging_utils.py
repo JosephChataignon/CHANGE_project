@@ -4,15 +4,22 @@ Helper file intended to help in setting up the logs
 and in logging some informations
 """
 
-import logging
+import sys, logging
 import torch
 
 
 
-def setup_logging(filename):
-    root_logger = logging.getLogger()
+def setup_logging(filename, root_logger):
+
     log_format = logging.Formatter('%(asctime)s %(levelname)s : %(message)s')
-    try:
+    # if interactive session
+    if hasattr(sys, 'ps1'):
+        print("Assuming this is a live session, logging only to console")
+        handler = logging.StreamHandler(sys.stdout)
+        handler.setLevel(logging.DEBUG)
+        handler.setFormatter(log_format)
+        root_logger.addHandler(handler)
+    else:
         # detailed logs go into a file
         detailed_log_handler = logging.FileHandler(filename)
         detailed_log_handler.setLevel(logging.DEBUG)
@@ -23,10 +30,10 @@ def setup_logging(filename):
         out_handler.setLevel(logging.INFO)
         out_handler.setFormatter(log_format)
         root_logger.addHandler(out_handler)
-    except:
-        # if __file__ fails in the try block
-        print("Assuming this is a live session, logging only to console")
-        root_logger.setLevel(logging.DEBUG)
+
+
+def log_git_info():
+
 
 
 def display_CUDA_info(device):
