@@ -14,7 +14,8 @@ assert 'SAVED_MODELS_DIR' in config, f'Could not find variable SAVED_MODELS_DIR 
 start_time = datetime.now()
 date_str = start_time.isoformat()[:19]
 log_file = f"{config['LOGS_FOLDER']}/{date_str}_{os.path.basename(__file__)}_TEEEEEEEEST.log"
-setup_logging(log_file)
+root_logger = logging.getLogger()
+setup_logging(log_file, root_logger)
 
 
 logging.info(f"{start_time} - Imports finished, starting script\n\n")
