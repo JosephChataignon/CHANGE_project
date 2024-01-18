@@ -46,45 +46,13 @@ setup_logging(log_file, root_logger)
 logging.info("Setup finished, starting script\n\n")
 
 
-## Display info on device available
-# logging.debug(f"CUDA available: {torch.cuda.is_available()}")
-# logging.debug(f"Devices available: {[torch.cuda.device(i) for i in range(torch.cuda.device_count())]}")
-# #device = torch.device("cuda")
-# device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-# debug_str = f"Now using device: {device}"
-# if device.type == 'cuda':
-#     debug_str += '\n\t'+torch.cuda.get_device_name(0)
-#     debug_str += '\n\tMemory Usage:'
-#     debug_str += f'\n\t\tAllocated: {round(torch.cuda.memory_allocated(0)/1024**3,1)} GB'
-#     debug_str += f'\n\t\tCached:    {round(torch.cuda.memory_reserved(0) /1024**3,1)} GB'
-#
-# logging.debug(debug_str)
-# logging.debug(f'\tDefault location for tensors: {torch.rand(3).device}')
-# #torch.set_default_tensor_type(torch.cuda.FloatTensor) #change default tensor type -
-# # THIS LINE BREAKS EVERYTHING FOR SOME REASON
-# #logging.debug(f'\tDefault location for tensors: {torch.rand(3).device}')
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 # logs CUDA info with DEBUG level
 display_CUDA_info(device)
 
 
-
-## Load dataset
-# if os.getenv("COLAB_RELEASE_TAG"):
-#     # from my Google drive
-#     from google.colab import drive
-#     drive.mount('/content/drive')
-#     working_dir = "/content/drive/MyDrive/Unibe/"
-#     data_dir = working_dir
-# else:
-#     # from Ubelix container
-#     working_dir = '/research_storage/'
-#     data_dir = working_dir + 'Walser_data/'
-#
-# train_file = data_dir + "train_dataset.txt"
-# test_file  = data_dir + "test_dataset.txt"
-
+# get data files
 train_file, test_file = get_CHANGE_data('Walser')
 
 
