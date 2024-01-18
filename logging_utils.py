@@ -32,8 +32,9 @@ def setup_logging(filename, root_logger):
         root_logger.addHandler(out_handler)
 
 
-def log_git_info():
+#def log_git_info():
 
+#def find_git_folder():
 
 
 def display_CUDA_info(device):
