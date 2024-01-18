@@ -36,35 +36,14 @@ assert 'SAVED_MODELS_DIR' in config, f'Could not find variable SAVED_MODELS_DIR 
 
 start_time = datetime.now()
 
-# ## Set up logging
-# root_logger = logging.getLogger()
-# log_format = logging.Formatter('%(asctime)s %(levelname)s : %(message)s')
-# #log_path = f'{os.path.dirname(os.path.abspath(__file__))}/logs'
-# log_path = LOGS_FOLDER
-# try:
-#     # detailed logs go into a file
-#     log_file = f'{log_path}/{start_time}_{os.path.basename(__file__)}.log'
-#     #logging.basicConfig(level=logging.DEBUG, filename=log_file,format=log_format)
-#     detailed_log_handler = logging.FileHandler(log_file)
-#     detailed_log_handler.setLevel(logging.DEBUG)
-#     detailed_log_handler.setFormatter(log_format)
-#     root_logger.addHandler(detailed_log_handler)
-#     # normal logs go to the output stream
-#     out_handler = logging.StreamHandler(sys.stdout)
-#     out_handler.setLevel(logging.INFO)
-#     out_handler.setFormatter(log_format)
-#     root_logger.addHandler(out_handler)
-# except:
-#     # if __file__ fails in the try block
-#     print("Assuming this is a live session, logging only to console")
-#     root_logger.setLevel(logging.DEBUG)
 date_str = start_time.isoformat()[:19]
 log_file = f"{config['LOGS_FOLDER']}/{date_str}_{os.path.basename(__file__)}.log"
 root_logger = logging.getLogger()
 setup_logging(log_file, root_logger)
 
 
-logging.info(f"{start_time} - Imports finished, starting script\n\n")
+
+logging.info("Setup finished, starting script\n\n")
 
 
 ## Display info on device available
