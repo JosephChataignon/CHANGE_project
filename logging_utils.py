@@ -10,7 +10,7 @@ import torch
 
 
 def setup_logging(filename, root_logger):
-
+    root_logger.setLevel(logging.DEBUG)
     log_format = logging.Formatter('%(asctime)s %(levelname)s : %(message)s')
     # if interactive session
     if hasattr(sys, 'ps1'):
