@@ -30,7 +30,7 @@ def setup_logging(filename, root_logger):
         out_handler.setLevel(logging.INFO)
         out_handler.setFormatter(log_format)
         root_logger.addHandler(out_handler)
-        logging.info(f"Detailed logs are written to: {log_file}")
+        logging.info(f"Detailed logs are written to: {filename}")
 
 
 
