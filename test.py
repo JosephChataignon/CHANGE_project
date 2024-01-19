@@ -1,4 +1,4 @@
-import os, sys, logging, torch, traceback
+import os, sys, logging, torch
 from dotenv import load_dotenv, dotenv_values
 from datetime import datetime, timedelta
 
