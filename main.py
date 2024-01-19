@@ -113,7 +113,7 @@ logging.info("Testing that inference works:\n" + result)
 
 # Define training arguments
 training_args = TrainingArguments(
-    output_dir=working_dir,
+    output_dir=config['SAVED_MODELS_DIR'],
     overwrite_output_dir=True,
     per_device_train_batch_size=4,
     num_train_epochs=3,
