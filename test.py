@@ -1,4 +1,4 @@
-import os, sys, logging, torch
+import os, sys, logging, torch, traceback
 from dotenv import load_dotenv, dotenv_values
 from datetime import datetime, timedelta
 
@@ -32,3 +32,6 @@ train_file, test_file = get_CHANGE_data('Walser')
 
 
 logging.info(f'test & train files:{train_file},{test_file}')
+
+
+1=2 # test uncaught exceptions logging

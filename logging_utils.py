@@ -4,7 +4,7 @@ Helper file intended to help in setting up the logs
 and in logging some informations
 """
 
-import sys, logging
+import sys, logging, traceback
 import torch
 
 
@@ -31,6 +31,15 @@ def setup_logging(filename, root_logger):
         out_handler.setFormatter(log_format)
         root_logger.addHandler(out_handler)
         logging.info(f"Detailed logs are written to: {filename}")
+    # log uncaught exceptions
+    sys.excepthook = log_exceptions
+
+def log_exceptions(type, value, tb):
+    for line in traceback.TracebackException(type, value, tb).format(chain=True):
+        logging.exception(line)
+    logging.exception(value)
+    # calls default excepthook
+    sys.__excepthook__(type, value, tb)
 
 
 
