@@ -31,6 +31,7 @@ def setup_logging(filename, root_logger):
         out_handler.setFormatter(log_format)
         root_logger.addHandler(out_handler)
         logging.info(f"Detailed logs are written to: {filename}")
+        log_system_info()
     # log uncaught exceptions
     sys.excepthook = log_exceptions
 
@@ -40,6 +41,12 @@ def log_exceptions(type, value, tb):
     logging.exception(value)
     # calls default excepthook
     sys.__excepthook__(type, value, tb)
+
+
+def log_system_info():
+    logging.debug(f"OS detected: {sys.platform}")
+    logging.debug(f"Python version: {sys.version}")
+    logging.debug(f"CUDA drivers version: {torch.version.cuda}")
 
 
 
