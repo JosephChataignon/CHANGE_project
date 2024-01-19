@@ -34,4 +34,4 @@ train_file, test_file = get_CHANGE_data('Walser')
 logging.info(f'test & train files:{train_file},{test_file}')
 
 
-1=2 # test uncaught exceptions logging
+x=10/0 # test uncaught exceptions logging
