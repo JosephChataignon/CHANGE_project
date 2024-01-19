@@ -35,8 +35,10 @@ def setup_logging(filename, root_logger):
     sys.excepthook = log_exceptions
 
 def log_exceptions(type, value, tb):
-    for line in traceback.TracebackException(type, value, tb).format(chain=True):
-        logging.exception(line)
+    # for line in traceback.TracebackException(type, value, tb).format(chain=True):
+    #     logging.exception(line)
+    exception_traceback = traceback.TracebackException(type, value, tb).format(chain=True)
+    logging.exception(exception_traceback)
     logging.exception(value)
     # calls default excepthook
     sys.__excepthook__(type, value, tb)
