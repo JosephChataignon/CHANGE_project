@@ -63,12 +63,14 @@ train_file, test_file = get_CHANGE_data('Walser')
 
 
 # Load model directly from huggingface's repo
-tokenizer = AutoTokenizer.from_pretrained("EleutherAI/pythia-160m")
-model = AutoModelForCausalLM.from_pretrained("EleutherAI/pythia-160m")
+# tokenizer = AutoTokenizer.from_pretrained("EleutherAI/pythia-160m")
+# model = AutoModelForCausalLM.from_pretrained("EleutherAI/pythia-160m")
+tokenizer = AutoTokenizer.from_pretrained("gpt2")
+model = AutoModelForCausalLM.from_pretrained("gpt2")
 metric = load_metric("accuracy")
 
 # set name where the trained model will be saved
-instance_name = "fine_tuned_pythia-160m-Walser"
+instance_name = "fine_tuned_gpt2-Walser"
 
 # move it to the GPU
 model.to(device)
