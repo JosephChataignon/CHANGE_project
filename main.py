@@ -63,17 +63,19 @@ train_file, test_file = get_CHANGE_data('Walser')
 
 
 # Load model directly from huggingface's repo
-# tokenizer = AutoTokenizer.from_pretrained("EleutherAI/pythia-160m")
-# model = AutoModelForCausalLM.from_pretrained("EleutherAI/pythia-160m")
-tokenizer = AutoTokenizer.from_pretrained("openai-gpt")
-model = AutoModelForCausalLM.from_pretrained("openai-gpt")
+model_name = "openai-gpt" # "EleutherAI/pythia-160m"
+tokenizer = AutoTokenizer.from_pretrained(model_name)
+model = AutoModelForCausalLM.from_pretrained(model_name)
 metric = load_metric("accuracy")
 
 # set name where the trained model will be saved
 instance_name = "fine_tuned_gpt1-Walser"
+logging.info(f'Model loaded: {model_name}')
+logging.info(f'Output instance name: {instance_name}')
 
 # move it to the GPU
 model.to(device)
+display_CUDA_info(device)
 
 # fix tokenizer issue
 if tokenizer.pad_token is None:
@@ -91,6 +93,7 @@ tokenized_datasets = dataset.map(tokenize_function, batched=True)
 
 # move to GPU
 tokenized_datasets = tokenized_datasets.map(lambda batch: {k: v.to(device) if isinstance(v, torch.Tensor) else v for k, v in batch.items()})
+display_CUDA_info(device)
 
 # Check that the model outputs something before fine-tuning
 prompt = 'Once upon a time, there was a'
@@ -119,7 +122,7 @@ training_args = TrainingArguments(
     num_train_epochs=3,
     save_total_limit=5,
     evaluation_strategy="steps",
-    eval_steps=100,
+    eval_steps=0.1,
 )
 
 trainer = Trainer(
