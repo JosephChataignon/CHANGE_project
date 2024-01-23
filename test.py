@@ -1,6 +1,7 @@
 import os, sys, logging, torch, transformers
 from dotenv import load_dotenv, dotenv_values
 from datetime import datetime, timedelta
+from datasets import load_metric
 
 from logging_utils import setup_logging, display_CUDA_info
 from data import get_CHANGE_data
