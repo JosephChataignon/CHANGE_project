@@ -11,6 +11,7 @@ import torch.backends.cuda as cuda
 from torch.utils.data import DataLoader, IterableDataset, Dataset
 from sklearn.model_selection import train_test_split
 
+import transformers
 from transformers import pipeline, AutoTokenizer, AutoModelForCausalLM, TrainingArguments
 from transformers import Trainer, LineByLineTextDataset, TextDataset, DataCollatorForLanguageModeling
 
@@ -39,7 +40,8 @@ start_time = datetime.now()
 date_str = start_time.isoformat()[:19]
 log_file = f"{config['LOGS_FOLDER']}/{date_str}_{os.path.basename(__file__)}.log"
 root_logger = logging.getLogger()
-setup_logging(log_file, root_logger)
+transformers_logger = transformers.logging.get_logger()
+setup_logging(log_file, root_logger, transformers_logger)
 
 
 
@@ -156,5 +158,5 @@ tokenizer.save_pretrained(f"{config['SAVED_MODELS_DIR']}/{instance_name}") #i di
 logging.info(f"model saved at {config['SAVED_MODELS_DIR']}/{instance_name}")
 
 # load for inference
-#tokenizer = AutoTokenizer.from_pretrained(data_dir + "fine_tuned_pythia-70m-Walser")
-#model = AutoModelForCausalLM.from_pretrained(data_dir + "fine_tuned_pythia-70m-Walser")
+#tokenizer = AutoTokenizer.from_pretrained(config['SAVED_MODELS_DIR'] + "fine_tuned_pythia-70m-Walser")
+#model = AutoModelForCausalLM.from_pretrained(config['SAVED_MODELS_DIR'] + "fine_tuned_pythia-70m-Walser")

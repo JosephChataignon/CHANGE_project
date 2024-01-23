@@ -5,12 +5,13 @@ and in logging some informations
 """
 
 import sys, logging, traceback
-import torch
+import torch, transformers
 
 
 
-def setup_logging(filename, root_logger):
+def setup_logging(filename, root_logger, transformers_logger):
     root_logger.setLevel(logging.DEBUG)
+    root_logger.handlers = []
     log_format = logging.Formatter('%(asctime)s %(levelname)s : %(message)s')
     # if interactive session
     if hasattr(sys, 'ps1'):
@@ -30,6 +31,13 @@ def setup_logging(filename, root_logger):
         out_handler.setLevel(logging.INFO)
         out_handler.setFormatter(log_format)
         root_logger.addHandler(out_handler)
+        # logs from transformers module
+        transformers_logger.handlers = []
+        transformers_handler = logging.FileHandler(filename)
+        transformers_handler.setLevel(logging.DEBUG)
+        transformers_handler.setFormatter(log_format)
+        transformers_logger.addHandler(transformers_handler)
+        # log basic info
         logging.info(f"Detailed logs are written to: {filename}")
         log_system_info()
     # log uncaught exceptions
