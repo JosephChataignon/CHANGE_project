@@ -3,8 +3,7 @@
 Launcher file
 """
 
-
-## Imports (that will eventually need to be cleaned up)
+## Imports
 import torch
 import torch.nn.functional as F
 import torch.backends.cuda as cuda
@@ -58,26 +57,32 @@ display_CUDA_info(device)
 train_file, test_file = get_CHANGE_data('Walser')
 
 
-# # If you want to check that the text file is accessed
-# with open(train_file, 'r') as f:
-#     walser_text = f.read()
-# logging.info('extract text from Walser: '+walser_text[:50])
 
-
-# Load model directly from huggingface's repo
+## Load model
 # model_name = "openai-gpt"
 model_name = "EleutherAI/pythia-70m"
+
+# load tokenizer
 tokenizer = AutoTokenizer.from_pretrained(model_name)
+
 # For quantization with GPTQ
-quantization_config = GPTQConfig(
-    bits=4,
-    dataset = "c4",
-    tokenizer=tokenizer)
-model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=quantization_config)
+# quantization_config = GPTQConfig(
+#     bits=4,
+#     dataset = "ptb", # default is "c4" for calibration dataset
+#     tokenizer=tokenizer)
+# model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=quantization_config)
+
+# Without GPTQ
+model = AutoModelForCausalLM.from_pretrained(model_name)
+
 metric = load_metric("accuracy")
 
+
+
+
+
 # set name where the trained model will be saved
-instance_name = "fine_tuned_gpt1-Walser"
+instance_name = "fine-tuned_pythia70M_Walser"
 logging.info(f'Model loaded: {model_name}')
 logging.info(f'Output instance name: {instance_name}')
 
@@ -90,18 +95,23 @@ if tokenizer.pad_token is None:
     tokenizer.add_special_tokens({'pad_token': '[PAD]'})
     model.resize_token_embeddings(len(tokenizer))
 
-# Load dataset
+## Load and tokenize dataset
 dataset = load_dataset("text", data_files={"train":train_file, "test":test_file})
 
 def tokenize_function(examples):
     return tokenizer(examples["text"], padding="max_length", truncation=True)
-
 
 tokenized_datasets = dataset.map(tokenize_function, batched=True)
 
 # move to GPU
 tokenized_datasets = tokenized_datasets.map(lambda batch: {k: v.to(device) if isinstance(v, torch.Tensor) else v for k, v in batch.items()})
 display_CUDA_info(device)
+
+
+
+
+
+
 
 # Check that the model outputs something before fine-tuning
 prompt = 'Once upon a time, there was a'
@@ -117,10 +127,10 @@ result = tokenizer.batch_decode(outputs, skip_special_tokens=True)[0]
 #result = result.split("<end_answer>")[0].strip()
 logging.info("Testing that inference works:\n" + result)
 
-# Define a custom training loop
-# def compute_loss(model, inputs):
-#     outputs = model(inputs.input_ids, inputs.attention_mask, inputs=input_ids)
-#     return outputs.loss
+
+
+
+
 
 # Define training arguments
 training_args = TrainingArguments(
@@ -142,6 +152,11 @@ trainer = Trainer(
     tokenizer=tokenizer,
     #compute_metrics=metric,
 )
+
+
+
+
+
 
 train_start_time = datetime.now()
 logging.info(f"{train_start_time} - Starting training")

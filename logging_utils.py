@@ -43,18 +43,17 @@ def setup_logging(filename, root_logger, transformers_logger):
     # log uncaught exceptions
     sys.excepthook = log_exceptions
 
-def log_exceptions(type, value, tb, logging=logging):
-    for line in traceback.TracebackException(type, value, tb).format(chain=True):
-        logging.exception(line)
-    logging.exception(value)
+def log_exceptions(exc_type, exc_value, exc_traceback, logging=logging):
+    logging.error("Uncaught exception", exc_info=(exc_type, exc_value, exc_traceback))
     # calls default excepthook
-    sys.__excepthook__(type, value, tb)
+    sys.__excepthook__(exc_type, exc_value, exc_traceback)
 
 
 def log_system_info():
-    logging.debug(f"OS detected: {sys.platform}")
-    logging.debug(f"Python version: {sys.version}")
-    logging.debug(f"CUDA drivers version: {torch.version.cuda}")
+    logging.debug('System info')
+    logging.debug(f"\tOS detected: {sys.platform}")
+    logging.debug(f"\tPython version: {sys.version}")
+    logging.debug(f"\tCUDA drivers version: {torch.version.cuda}")
 
 
 
@@ -71,7 +70,7 @@ def display_CUDA_info(device):
         debug_str += f'\n\t\tCached:    {round(torch.cuda.memory_reserved(0) /1024**3,1)} GB'
 
     logging.debug(debug_str)
-    logging.debug(f'\tDefault location for tensors: {torch.rand(3).device}')
+    logging.debug(f'The default location for tensors is: {torch.rand(3).device}')
 
 
 
