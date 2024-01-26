@@ -66,6 +66,7 @@ def display_CUDA_info(device):
     if device.type == 'cuda':
         debug_str += '\n\t'+torch.cuda.get_device_name(0)
         debug_str += '\n\tMemory Usage:'
+        debug_str += f'\n\t\tTotal available: {round(torch.cuda.get_device_properties(0).total_memory/1024**3,1)} GB'
         debug_str += f'\n\t\tAllocated: {round(torch.cuda.memory_allocated(0)/1024**3,1)} GB'
         debug_str += f'\n\t\tCached:    {round(torch.cuda.memory_reserved(0) /1024**3,1)} GB'
 
