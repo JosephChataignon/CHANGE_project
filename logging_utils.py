@@ -43,7 +43,7 @@ def setup_logging(filename, root_logger, transformers_logger):
     # log uncaught exceptions
     sys.excepthook = log_exceptions
 
-def log_exceptions(type, value, tb):
+def log_exceptions(type, value, tb, logging=logging):
     for line in traceback.TracebackException(type, value, tb).format(chain=True):
         logging.exception(line)
     logging.exception(value)
