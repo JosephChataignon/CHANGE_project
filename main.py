@@ -12,7 +12,7 @@ from torch.utils.data import DataLoader, IterableDataset, Dataset
 from sklearn.model_selection import train_test_split
 
 import transformers
-from transformers import pipeline, AutoTokenizer, AutoModelForCausalLM, TrainingArguments
+from transformers import pipeline, AutoTokenizer, AutoModelForCausalLM, TrainingArguments, GPTQConfig
 from transformers import Trainer, LineByLineTextDataset, TextDataset, DataCollatorForLanguageModeling
 
 import os, sys, copy, logging
@@ -65,9 +65,15 @@ train_file, test_file = get_CHANGE_data('Walser')
 
 
 # Load model directly from huggingface's repo
-model_name = "openai-gpt" # "EleutherAI/pythia-160m"
+# model_name = "openai-gpt"
+model_name = "EleutherAI/pythia-70m"
 tokenizer = AutoTokenizer.from_pretrained(model_name)
-model = AutoModelForCausalLM.from_pretrained(model_name)
+# For quantization with GPTQ
+quantization_config = GPTQConfig(
+    bits=4,
+    dataset = "c4",
+    tokenizer=tokenizer)
+model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=quantization_config)
 metric = load_metric("accuracy")
 
 # set name where the trained model will be saved
