@@ -66,11 +66,11 @@ model_name = "EleutherAI/pythia-70m"
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 
 # For quantization with GPTQ
-# quantization_config = GPTQConfig(
-#     bits=4,
-#     dataset = "ptb", # default is "c4" for calibration dataset
-#     tokenizer=tokenizer)
-# model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=quantization_config)
+quantization_config = GPTQConfig(
+    bits=4,
+    dataset = "ptb", # default is "c4" for calibration dataset
+    tokenizer=tokenizer)
+model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=quantization_config)
 
 # Without GPTQ
 model = AutoModelForCausalLM.from_pretrained(model_name)
