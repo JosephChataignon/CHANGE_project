@@ -13,6 +13,7 @@ from sklearn.model_selection import train_test_split
 import transformers
 from transformers import pipeline, AutoTokenizer, AutoModelForCausalLM, TrainingArguments, GPTQConfig
 from transformers import Trainer, LineByLineTextDataset, TextDataset, DataCollatorForLanguageModeling
+from peft import LoraConfig, get_peft_model
 
 import os, sys, copy, logging
 #from transformers.utils import logging
@@ -65,15 +66,22 @@ model_name = "EleutherAI/pythia-70m"
 # load tokenizer
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 
-# For quantization with GPTQ
-quantization_config = GPTQConfig(
-    bits=4,
-    dataset = "ptb", # default is "c4" for calibration dataset
-    tokenizer=tokenizer)
-model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=quantization_config)
+## QLoRA
+# todo: try loftQ and other LoRA init methods
+config = LoraConfig(init_lora_weights="gaussian", target_modules=["query_key_value"])
+base_model = AutoModelForCausalLM.from_pretrained(model_name)
+model = get_peft_model(base_model, config)
+model.print_trainable_parameters()
 
-# Without GPTQ
-model = AutoModelForCausalLM.from_pretrained(model_name)
+## For quantization with GPTQ
+# quantization_config = GPTQConfig(
+#     bits=4,
+#     dataset = "ptb", # default is "c4" for calibration dataset
+#     tokenizer=tokenizer)
+# model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=quantization_config)
+
+## Simple loading
+#model = AutoModelForCausalLM.from_pretrained(model_name)
 
 metric = load_metric("accuracy")
 
