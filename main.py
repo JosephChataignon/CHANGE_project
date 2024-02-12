@@ -68,9 +68,9 @@ tokenizer = AutoTokenizer.from_pretrained(model_name)
 
 ## QLoRA
 # todo: try loftQ and other LoRA init methods
-config = LoraConfig(init_lora_weights="gaussian", target_modules=["query_key_value"])
+peft_config = LoraConfig(init_lora_weights="gaussian", target_modules=["query_key_value"])
 base_model = AutoModelForCausalLM.from_pretrained(model_name)
-model = get_peft_model(base_model, config)
+model = get_peft_model(base_model, peft_config)
 model.print_trainable_parameters()
 
 ## For quantization with GPTQ
