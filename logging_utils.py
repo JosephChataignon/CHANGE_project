@@ -73,7 +73,19 @@ def display_CUDA_info(device):
     logging.debug(f'The default location for tensors is: {torch.rand(3).device}')
 
 
-
+def print_trainable_parameters(model):
+    """
+    Prints the number of trainable parameters in the model. From https://colab.research.google.com/drive/1VoYNfYDKcKRQRor98Zbf2-9VQTtGJ24k?usp=sharing#scrollTo=gkIcwsSU01EB
+    """
+    trainable_params = 0
+    all_param = 0
+    for _, param in model.named_parameters():
+        all_param += param.numel()
+        if param.requires_grad:
+            trainable_params += param.numel()
+    print(
+        f"trainable params: {trainable_params} || all params: {all_param} || trainable%: {100 * trainable_params / all_param}"
+    )
 
 
 

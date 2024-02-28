@@ -13,7 +13,8 @@ from sklearn.model_selection import train_test_split
 import transformers
 from transformers import pipeline, AutoTokenizer, AutoModelForCausalLM, TrainingArguments, GPTQConfig
 from transformers import Trainer, LineByLineTextDataset, TextDataset, DataCollatorForLanguageModeling
-from peft import LoraConfig, get_peft_model
+from transformers import BitsAndBytesConfig
+from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
 
 import os, sys, copy, logging
 #from transformers.utils import logging
@@ -26,7 +27,7 @@ from datasets import load_metric
 
 # in interactive sessions, uncomment this line:
 #sys.path.insert(0, r'/path/to/code/folder')
-from logging_utils import setup_logging, display_CUDA_info
+from logging_utils import setup_logging, display_CUDA_info, print_trainable_parameters
 from data import get_CHANGE_data
 
 ## Load environment variables
@@ -66,14 +67,29 @@ model_name = "EleutherAI/pythia-70m"
 # load tokenizer
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 
-## QLoRA
-# todo: try loftQ and other LoRA init methods
-peft_config = LoraConfig(init_lora_weights="gaussian", target_modules=["query_key_value"])
-base_model = AutoModelForCausalLM.from_pretrained(model_name)
-model = get_peft_model(base_model, peft_config)
-model.print_trainable_parameters()
+## Bitsandbytes quantization
+bnb_config = BitsAndBytesConfig(
+    load_in_4bit=True,
+    bnb_4bit_use_double_quant=True,
+    bnb_4bit_quant_type="nf4",
+    bnb_4bit_compute_dtype=torch.bfloat16
+)
+model = AutoModelForCausalLM.from_pretrained(model_id, quantization_config=bnb_config, device_map={"":0})
+model.gradient_checkpointing_enable()
+model = prepare_model_for_kbit_training(model) #peft function
+loraconfig = LoraConfig(
+    r=8,
+    lora_alpha=32,
+    target_modules=["query_key_value"],
+    lora_dropout=0.05,
+    bias="none",
+    task_type="CAUSAL_LM"
+)
 
-## For quantization with GPTQ
+model = get_peft_model(model, loraconfig)
+print_trainable_parameters(model)
+
+## For quantization with GPTQ (no training afterward, inference only)
 # quantization_config = GPTQConfig(
 #     bits=4,
 #     dataset = "ptb", # default is "c4" for calibration dataset
