@@ -81,17 +81,17 @@ model = AutoModelForCausalLM.from_pretrained(
     use_cache = False
 )
 #model.gradient_checkpointing_enable()
-#model = prepare_model_for_kbit_training(model) #peft function
-# loraconfig = LoraConfig(
-#     r=8,
-#     lora_alpha=32,
-#     target_modules=["query_key_value"],
-#     lora_dropout=0.05,
-#     bias="none",
-#     task_type="CAUSAL_LM"
-# )
+model = prepare_model_for_kbit_training(model) #peft function
+loraconfig = LoraConfig(
+    r=8,
+    lora_alpha=32,
+    target_modules=["query_key_value"],
+    lora_dropout=0.05,
+    bias="none",
+    task_type="CAUSAL_LM"
+)
 
-#model = get_peft_model(model, loraconfig)
+model = get_peft_model(model, loraconfig)
 print_trainable_parameters(model)
 
 ## For quantization with GPTQ (no training afterward, inference only)
@@ -116,7 +116,7 @@ logging.info(f'Model loaded: {model_name}')
 logging.info(f'Output instance name: {instance_name}')
 
 # move it to the GPU
-#model.to(device)
+model.to(device)
 display_CUDA_info(device)
 
 # fix tokenizer issue
@@ -172,16 +172,27 @@ training_args = TrainingArguments(
     eval_steps=0.1,
 )
 
-trainer = Trainer(
-    model=model,
+# trainer = Trainer(
+#     model=model,
+#     args=training_args,
+#     train_dataset=tokenized_datasets['train'],
+#     eval_dataset=tokenized_datasets['test'],
+#     data_collator=DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=False),
+#     tokenizer=tokenizer,
+#     #compute_metrics=metric,
+# )
+sft_trainer = SFTTrainer(
+    model,
     args=training_args,
     train_dataset=tokenized_datasets['train'],
     eval_dataset=tokenized_datasets['test'],
-    data_collator=DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=False),
     tokenizer=tokenizer,
-    #compute_metrics=metric,
+    peft_config=loraconfig,
+#    dataset_text_field="text",
+#    max_seq_length=2048,
+#    data_collator=DataCollatorForCompletionOnlyLM(tokenizer=tokenizer,response_template="Answer:")
+    data_collator=DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=False),
 )
-
 
 
 
@@ -190,7 +201,8 @@ trainer = Trainer(
 train_start_time = datetime.now()
 logging.info(f"{train_start_time} - Starting training")
 #trainer.compute_loss = compute_loss
-train_result = trainer.train()
+#train_result = trainer.train()
+train_result = sft_trainer.train()
 train_end_time = datetime.now()
 logging.info(f"{train_end_time} - Training finished !")
 logging.info(f"Time spent until training starts: {train_start_time - start_time}")
