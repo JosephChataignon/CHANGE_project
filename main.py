@@ -193,7 +193,7 @@ sft_trainer = SFTTrainer(
 #    max_seq_length=2048,
 #    data_collator=DataCollatorForCompletionOnlyLM(tokenizer=tokenizer,response_template="Answer:")
     data_collator=DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=False),
-    packing=True,
+    dataset_text_field='text'
 )
 
 
