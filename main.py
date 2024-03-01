@@ -75,7 +75,7 @@ bnb_config = BitsAndBytesConfig(
     bnb_4bit_compute_dtype=torch.bfloat16
 )
 model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=bnb_config, device_map="auto")
-model.gradient_checkpointing_enable()
+#model.gradient_checkpointing_enable()
 model = prepare_model_for_kbit_training(model) #peft function
 loraconfig = LoraConfig(
     r=8,
