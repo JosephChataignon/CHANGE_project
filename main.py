@@ -15,6 +15,7 @@ from transformers import pipeline, AutoTokenizer, AutoModelForCausalLM, Training
 from transformers import Trainer, LineByLineTextDataset, TextDataset, DataCollatorForLanguageModeling
 from transformers import BitsAndBytesConfig
 from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
+from trl import SFTTrainer, DataCollatorForCompletionOnlyLM
 
 import os, sys, copy, logging
 #from transformers.utils import logging
