@@ -116,7 +116,7 @@ logging.info(f'Model loaded: {model_name}')
 logging.info(f'Output instance name: {instance_name}')
 
 # move it to the GPU
-model.to(device)
+#model.to(device)
 display_CUDA_info(device)
 
 # fix tokenizer issue
