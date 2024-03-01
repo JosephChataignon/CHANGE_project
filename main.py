@@ -74,19 +74,24 @@ bnb_config = BitsAndBytesConfig(
     bnb_4bit_quant_type="nf4",
     bnb_4bit_compute_dtype=torch.bfloat16
 )
-model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=bnb_config, device_map="auto", use_cache = False)
-#model.gradient_checkpointing_enable()
-model = prepare_model_for_kbit_training(model) #peft function
-loraconfig = LoraConfig(
-    r=8,
-    lora_alpha=32,
-    target_modules=["query_key_value"],
-    lora_dropout=0.05,
-    bias="none",
-    task_type="CAUSAL_LM"
+model = AutoModelForCausalLM.from_pretrained(
+    model_name,
+    quantization_config=bnb_config,
+    device_map="auto",
+    use_cache = False
 )
+#model.gradient_checkpointing_enable()
+#model = prepare_model_for_kbit_training(model) #peft function
+# loraconfig = LoraConfig(
+#     r=8,
+#     lora_alpha=32,
+#     target_modules=["query_key_value"],
+#     lora_dropout=0.05,
+#     bias="none",
+#     task_type="CAUSAL_LM"
+# )
 
-model = get_peft_model(model, loraconfig)
+#model = get_peft_model(model, loraconfig)
 print_trainable_parameters(model)
 
 ## For quantization with GPTQ (no training afterward, inference only)
