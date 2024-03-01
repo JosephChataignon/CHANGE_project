@@ -93,6 +93,7 @@ loraconfig = LoraConfig(
 )
 
 model = get_peft_model(model, loraconfig)
+model.enable_input_require_grads()
 print_trainable_parameters(model)
 
 ## For quantization with GPTQ (no training afterward, inference only)
