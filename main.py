@@ -91,9 +91,8 @@ loraconfig = LoraConfig(
     bias="none",
     task_type="CAUSAL_LM"
 )
-
-model = get_peft_model(model, loraconfig)
 model.enable_input_require_grads()
+model = get_peft_model(model, loraconfig)
 print_trainable_parameters(model)
 
 ## For quantization with GPTQ (no training afterward, inference only)
