@@ -91,7 +91,6 @@ loraconfig = LoraConfig(
     bias="none",
     task_type="CAUSAL_LM"
 )
-model.enable_input_require_grads()
 model = get_peft_model(model, loraconfig)
 print_trainable_parameters(model)
 
