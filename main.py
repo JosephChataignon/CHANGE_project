@@ -57,7 +57,7 @@ display_CUDA_info(device)
 
 
 # get data files
-train_file, test_file = get_CHANGE_data('Walser')
+train_file, test_file, val_file = get_CHANGE_data('Walser')
 
 
 
