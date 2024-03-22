@@ -36,7 +36,7 @@ def get_CHANGE_data(data_type):
         for folders_list in [train_folders, test_folders, val_folders]:
             folders_list = [f"{data_dir}output/{seg}/input/{seg}*.txt" for seg in folders_list]
 
-        return train_folders, test_folders, val_folders
+        return tuple(folders_list)
 
 
 
