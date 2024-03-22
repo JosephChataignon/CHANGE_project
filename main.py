@@ -69,30 +69,31 @@ model_name = "EleutherAI/pythia-70m"
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 
 ## Bitsandbytes quantization
-bnb_config = BitsAndBytesConfig(
-    load_in_4bit=True,
-    bnb_4bit_use_double_quant=True,
-    bnb_4bit_quant_type="nf4",
-    bnb_4bit_compute_dtype=torch.bfloat16
-)
-model = AutoModelForCausalLM.from_pretrained(
-    model_name,
-    quantization_config=bnb_config,
-    device_map="auto",
-    use_cache = False
-)
-#model.gradient_checkpointing_enable()
-model = prepare_model_for_kbit_training(model) #peft function
-loraconfig = LoraConfig(
-    r=8,
-    lora_alpha=32,
-    target_modules=["query_key_value"],
-    lora_dropout=0.05,
-    bias="none",
-    task_type="CAUSAL_LM"
-)
-model = get_peft_model(model, loraconfig)
-print_trainable_parameters(model)
+# bnb_config = BitsAndBytesConfig(
+#     load_in_4bit=True,
+#     bnb_4bit_use_double_quant=True,
+#     bnb_4bit_quant_type="nf4",
+#     bnb_4bit_compute_dtype=torch.bfloat16
+# )
+# model = AutoModelForCausalLM.from_pretrained(
+#     model_name,
+#     quantization_config=bnb_config,
+#     device_map="auto",
+#     use_cache = False
+# )
+## LoRA
+# #model.gradient_checkpointing_enable()
+# model = prepare_model_for_kbit_training(model) #peft function
+# loraconfig = LoraConfig(
+#     r=8,
+#     lora_alpha=32,
+#     target_modules=["query_key_value"],
+#     lora_dropout=0.05,
+#     bias="none",
+#     task_type="CAUSAL_LM"
+# )
+# model = get_peft_model(model, loraconfig)
+# print_trainable_parameters(model)
 
 ## For quantization with GPTQ (no training afterward, inference only)
 # quantization_config = GPTQConfig(
@@ -102,7 +103,7 @@ print_trainable_parameters(model)
 # model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=quantization_config)
 
 ## Simple loading
-#model = AutoModelForCausalLM.from_pretrained(model_name)
+model = AutoModelForCausalLM.from_pretrained(model_name)
 
 metric = load_metric("accuracy")
 
