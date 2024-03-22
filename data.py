@@ -33,10 +33,12 @@ def get_CHANGE_data(data_type):
         test_folders = ["seg71","seg72","seg73","seg74","seg75","seg76","seg77","seg78","seg79",]
         val_folders = ["seg80","seg81","seg82","seg83","seg84","seg85","seg86a","seg86b","seg87"]
         # replace the "segXX" with a path to txt files, using a * wildcard
+        data_folders = []
         for folders_list in [train_folders, test_folders, val_folders]:
             folders_list = [f"{data_dir}output/{seg}/input/{seg}*.txt" for seg in folders_list]
+            data_folders.append(folders_list)
 
-        return tuple(folders_list)
+        return tuple(data_folders)
 
 
 
