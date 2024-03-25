@@ -173,28 +173,28 @@ training_args = TrainingArguments(
     eval_steps=0.1,
 )
 
-# trainer = Trainer(
-#     model=model,
-#     args=training_args,
-#     train_dataset=tokenized_datasets['train'],
-#     eval_dataset=tokenized_datasets['test'],
-#     data_collator=DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=False),
-#     tokenizer=tokenizer,
-#     #compute_metrics=metric,
-# )
-sft_trainer = SFTTrainer(
-    model,
+trainer = Trainer(
+    model=model,
     args=training_args,
     train_dataset=tokenized_datasets['train'],
     eval_dataset=tokenized_datasets['test'],
-    tokenizer=tokenizer,
-    peft_config=loraconfig,
-#    dataset_text_field="text",
-#    max_seq_length=2048,
-#    data_collator=DataCollatorForCompletionOnlyLM(tokenizer=tokenizer,response_template="Answer:")
     data_collator=DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=False),
-    dataset_text_field='text'
+    tokenizer=tokenizer,
+    #compute_metrics=metric,
 )
+# sft_trainer = SFTTrainer(
+#     model,
+#     args=training_args,
+#     train_dataset=tokenized_datasets['train'],
+#     eval_dataset=tokenized_datasets['test'],
+#     tokenizer=tokenizer,
+#     peft_config=loraconfig,
+# #    dataset_text_field="text",
+# #    max_seq_length=2048,
+# #    data_collator=DataCollatorForCompletionOnlyLM(tokenizer=tokenizer,response_template="Answer:")
+#     data_collator=DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=False),
+#     dataset_text_field='text'
+# )
 
 
 
