@@ -182,7 +182,7 @@ trainer = Trainer(
     tokenizer=tokenizer,
     #compute_metrics=metric,
 )
-# sft_trainer = SFTTrainer(
+# trainer = SFTTrainer(
 #     model,
 #     args=training_args,
 #     train_dataset=tokenized_datasets['train'],
@@ -203,8 +203,7 @@ trainer = Trainer(
 train_start_time = datetime.now()
 logging.info(f"{train_start_time} - Starting training")
 #trainer.compute_loss = compute_loss
-#train_result = trainer.train()
-train_result = sft_trainer.train()
+train_result = trainer.train()
 train_end_time = datetime.now()
 logging.info(f"{train_end_time} - Training finished !")
 logging.info(f"Time spent until training starts: {train_start_time - start_time}")
