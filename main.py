@@ -57,7 +57,8 @@ display_CUDA_info(device)
 
 
 # get data files
-train_file, test_file, val_file = get_CHANGE_data('Max_Planck_test')
+data_set = 'Max-Planck-test'
+train_file, test_file, val_file = get_CHANGE_data(data_set)
 
 
 
@@ -112,9 +113,9 @@ metric = load_metric("accuracy")
 
 
 # set name where the trained model will be saved
-instance_name = "fine-tuned_pythia70M_Walser"
+instance_name = f"{model_name.replace('/','-')}_finetuned-on_{data_set}_{start_time.date()}"
 logging.info(f'Model loaded: {model_name}')
-logging.info(f'Output instance name: {instance_name}')
+logging.info(f'Output (fine-tuned) model will be saved with the name: {instance_name}')
 
 # move it to the GPU
 model.to(device)
@@ -126,7 +127,10 @@ if tokenizer.pad_token is None:
     model.resize_token_embeddings(len(tokenizer))
 
 ## Load and tokenize dataset
-dataset = load_dataset("text", data_files={"train":train_file, "test":test_file})
+if val_file is not None:
+    dataset = load_dataset("text", data_files={"train":train_file, "test":test_file, "validation":val_file})
+else:
+    dataset = load_dataset("text", data_files={"train":train_file, "test":test_file})
 
 def tokenize_function(examples):
     return tokenizer(examples["text"], padding="max_length", truncation=True)

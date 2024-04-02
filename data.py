@@ -22,7 +22,7 @@ def get_CHANGE_data(data_type):
         train_file = data_dir + "train_dataset.txt"
         test_file  = data_dir + "test_dataset.txt"
         return train_file, test_file, None
-    elif "maxplanck" in data_type.lower().replace('_',''):
+    elif "maxplanck" in data_type.lower().replace('_','').replace('-',''):
         data_dir = '/research_storage/Data_MaxPlanckInstitut/'
         # in Data_MaxPlanckInstitut/output, there are folders named as seg87, seg86b, seg01
         # and a maxplanckdata folder which contains all the txt files (duplicate of the seg* folders content)
