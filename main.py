@@ -144,7 +144,7 @@ display_CUDA_info(device)
 
 
 # Check that the model outputs something before fine-tuning
-def inference(prompt,model,tokenizer,device):
+def inference_test(prompt,model,tokenizer,device):
     inputs = tokenizer(prompt, return_tensors="pt")
     logging.debug(f"Inference: inputs are in CUDA: {inputs['input_ids'].is_cuda}")
     inputs = {k: v.to(device) for k, v in inputs.items()}  # Move input tensors to GPU
@@ -156,7 +156,7 @@ def inference(prompt,model,tokenizer,device):
     result = tokenizer.batch_decode(outputs, skip_special_tokens=True)[0]
     return result
 
-result = inference('Once upon a time, there was a',model,tokenizer,device)
+result = inference_test('Once upon a time, there was a',model,tokenizer,device)
 logging.info("Testing that inference works:\n" + result)
 
 
