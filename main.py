@@ -57,7 +57,7 @@ display_CUDA_info(device)
 
 
 # get data files
-train_file, test_file, val_file = get_CHANGE_data('Max_Planck')
+train_file, test_file, val_file = get_CHANGE_data('Max_Planck_test')
 
 
 
@@ -144,21 +144,20 @@ display_CUDA_info(device)
 
 
 # Check that the model outputs something before fine-tuning
-prompt = 'Once upon a time, there was a'
-inputs = tokenizer(prompt, return_tensors="pt")
-logging.debug(f"inputs are in CUDA: {inputs['input_ids'].is_cuda}")
-inputs = {k: v.to(device) for k, v in inputs.items()}  # Move input tensors to GPU
-logging.debug(f"inputs are in CUDA now: {inputs['input_ids'].is_cuda}") # inputs[0].is_cuda if bugs ?
-logging.debug(f"model is in CUDA: {all(p.is_cuda for p in model.parameters())}")
-outputs = model.generate(
-    **inputs, max_new_tokens=100
-)  # default generation config (+ 100 tokens)
-result = tokenizer.batch_decode(outputs, skip_special_tokens=True)[0]
-#result = result.split("<end_answer>")[0].strip()
+def inference(prompt,model,tokenizer,device):
+    inputs = tokenizer(prompt, return_tensors="pt")
+    logging.debug(f"Inference: inputs are in CUDA: {inputs['input_ids'].is_cuda}")
+    inputs = {k: v.to(device) for k, v in inputs.items()}  # Move input tensors to GPU
+    logging.debug(f"Inference: inputs are in CUDA now: {inputs['input_ids'].is_cuda}") # inputs[0].is_cuda if bugs ?
+    logging.debug(f"Inference: model is in CUDA: {all(p.is_cuda for p in model.parameters())}")
+    outputs = model.generate(
+        **inputs, max_new_tokens=100
+    )  # default generation config (+ 100 tokens)
+    result = tokenizer.batch_decode(outputs, skip_special_tokens=True)[0]
+    return result
+
+result = inference('Once upon a time, there was a',model,tokenizer,device)
 logging.info("Testing that inference works:\n" + result)
-
-
-
 
 
 
