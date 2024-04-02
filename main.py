@@ -57,7 +57,7 @@ display_CUDA_info(device)
 
 
 # get data files
-data_set = 'Max-Planck-test'
+data_set = 'Walser'
 train_file, test_file, val_file = get_CHANGE_data(data_set)
 
 
