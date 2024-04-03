@@ -56,7 +56,7 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 display_CUDA_info(device)
 
 
-# get data files
+# get data files ("Walser" or "Max-Planck" or "Max-Planck-test")
 data_set = 'Walser'
 train_file, test_file, val_file = get_CHANGE_data(data_set)
 
@@ -205,8 +205,13 @@ trainer = Trainer(
 
 train_start_time = datetime.now()
 logging.info(f"{train_start_time} - Starting training")
-#trainer.compute_loss = compute_loss
-train_result = trainer.train()
+try:
+    #trainer.compute_loss = compute_loss
+    train_result = trainer.train()
+except Exception as e:
+    train_end_time = datetime.now()
+    logging.error(f"{train_end_time} - Training failed")
+    raise
 train_end_time = datetime.now()
 logging.info(f"{train_end_time} - Training finished !")
 logging.info(f"Time spent until training starts: {train_start_time - start_time}")
