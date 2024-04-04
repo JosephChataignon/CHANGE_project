@@ -59,7 +59,7 @@ display_CUDA_info(device)
 # get data files ("Walser" or "Max-Planck" or "Max-Planck-test")
 data_set = 'Max-Planck-test'
 train_file, test_file, val_file = get_CHANGE_data(data_set)
-
+logging.info(f'Loaded data set: {data_set}')
 
 
 ## Load model

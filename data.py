@@ -53,7 +53,7 @@ def get_CHANGE_data(data_type):
             data_folders.append(folders_list)
 
         #return tuple(data_folders)
-            return [f"{data_dir}output/seg01/input/seg01_1524_00000030.txt"], [f"{data_dir}output/seg71/input/seg71_206422_00000318.txt"], [f"{data_dir}output/seg80/input/seg80_231690_00000395.txt"]
+        return f"{data_dir}output/seg01/input/seg01_1524_00000030.txt", f"{data_dir}output/seg71/input/seg71_206422_00000318.txt", f"{data_dir}output/seg80/input/seg80_231690_00000395.txt"
 
 
 
