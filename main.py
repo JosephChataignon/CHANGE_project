@@ -57,7 +57,7 @@ display_CUDA_info(device)
 
 
 # get data files ("Walser" or "Max-Planck" or "Max-Planck-test")
-data_set = 'Walser'
+data_set = 'Max-Planck-test'
 train_file, test_file, val_file = get_CHANGE_data(data_set)
 
 
@@ -211,6 +211,7 @@ try:
 except Exception as e:
     train_end_time = datetime.now()
     logging.error(f"{train_end_time} - Training failed")
+    display_CUDA_info(device)
     raise
 train_end_time = datetime.now()
 logging.info(f"{train_end_time} - Training finished !")
