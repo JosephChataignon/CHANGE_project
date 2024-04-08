@@ -125,14 +125,9 @@ if tokenizer.pad_token is None:
     model.resize_token_embeddings(len(tokenizer))
 
 ## Load and tokenize dataset
-train_file, test_file, val_file = get_CHANGE_data(data_set)
-if val_file is not None:
-    dataset = load_dataset("text", data_files={"train":train_file, "test":test_file, "validation":val_file})
-else:
-    dataset = load_dataset("text", data_files={"train":train_file, "test":test_file})
-##
 logging.info(f'Loading data set: {data_set}')
 dataset = get_CHANGE_data(data_set)
+
 
 def tokenize_function(examples):
     return tokenizer(examples["text"], padding="max_length", truncation=True)

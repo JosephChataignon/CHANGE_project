@@ -3,6 +3,7 @@
 Helper file to hide the mess of getting data from various sources
 """
 import os
+import logging
 from datasets import load_dataset
 
 
@@ -27,6 +28,13 @@ def get_CHANGE_data(data_type):
     
     elif data_type.lower().replace('-','') == "maxplanck":
         data_dir = '/research_storage/Data_MaxPlanckInstitut/'
+        substitutions_file = data_dir + 'scripts/CHANGE_processing/unique_characters-replace.txt'
+        # We will need to substitute some problematic characters with new ones
+        character_pairs = load_substitutions(substitutions_file)
+        def substitute_chars(line):
+            for k,v in character_pairs.items():
+                line['text'] = line['text'].replace(k,v)
+            return line
         # in Data_MaxPlanckInstitut/output, there are folders named as seg87, seg86b, seg01
         # and a maxplanckdata folder which contains all the txt files (duplicate of the seg* folders content)
         # actual data is in the seg*/input/*.txt
@@ -48,7 +56,7 @@ def get_CHANGE_data(data_type):
                 data_files[type_].append(f"{data_dir}output/{seg}/input/{seg}*.txt")
 
         dataset = load_dataset("text", data_files=data_files)
-
+        dataset = dataset.map(substitute_chars)
         return dataset
     
     elif data_type.lower().replace('-','') == "maxplancktest":
@@ -57,9 +65,26 @@ def get_CHANGE_data(data_type):
         dataset = load_dataset("text", data_files={"train":f"{data_dir}output/seg01/input/seg01_1524_00000030.txt", 
                                                 "test":f"{data_dir}output/seg71/input/seg71_206422_00000318.txt",
                                                 "validation":f"{data_dir}output/seg80/input/seg80_231690_00000395.txt" })
+        dataset = dataset.map(substitute_chars)
         return dataset
+        
 
 
 
  
-# dataset = load_dataset("text", data_files={"train":['/research_storage/Data_MaxPlanckInstitut/output/seg01/input/seg01*.txt','/research_storage/Data_MaxPlanckInstitut/output/seg02/input/seg02*.txt'], "test":'/research_storage/Data_MaxPlanckInstitut/output/seg03/input/seg03*.txt'})
+
+def load_substitutions(substitutions_file):
+    """ This loads a file of substitutions where each line has 2 characters separated by a tab """
+    logging.info(f'preparing to substitute characters in the dataset, from file: {substitutions_file}')
+    character_pairs = {}
+    # Read the file and extract character pairs
+    with open(substitutions_file, 'r', encoding='utf-8') as f:
+        for line in f:
+            pair = line.strip().split('\t')
+            if len(pair) == 2:
+                character_pairs[pair[0]] = pair[1]
+            else:
+                logging.info(f"substitutions: this line does not have exactly 2 elements: {line.strip()}")
+    return character_pairs
+
+
