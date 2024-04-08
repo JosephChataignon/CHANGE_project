@@ -61,6 +61,13 @@ def get_CHANGE_data(data_type):
     
     elif data_type.lower().replace('-','') == "maxplancktest":
         data_dir = '/research_storage/Data_MaxPlanckInstitut/'
+        substitutions_file = data_dir + 'scripts/CHANGE_processing/unique_characters-replace.txt'
+        # We will need to substitute some problematic characters with new ones
+        character_pairs = load_substitutions(substitutions_file)
+        def substitute_chars(line):
+            for k,v in character_pairs.items():
+                line['text'] = line['text'].replace(k,v)
+            return line
         # just one file for each
         dataset = load_dataset("text", data_files={"train":f"{data_dir}output/seg01/input/seg01_1524_00000030.txt", 
                                                 "test":f"{data_dir}output/seg71/input/seg71_206422_00000318.txt",
