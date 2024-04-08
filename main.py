@@ -58,8 +58,6 @@ display_CUDA_info(device)
 
 # get data files ("Walser" or "Max-Planck" or "Max-Planck-test")
 data_set = 'Max-Planck-test'
-train_file, test_file, val_file = get_CHANGE_data(data_set)
-logging.info(f'Loaded data set: {data_set}')
 
 
 ## Load model
@@ -127,10 +125,14 @@ if tokenizer.pad_token is None:
     model.resize_token_embeddings(len(tokenizer))
 
 ## Load and tokenize dataset
+train_file, test_file, val_file = get_CHANGE_data(data_set)
 if val_file is not None:
     dataset = load_dataset("text", data_files={"train":train_file, "test":test_file, "validation":val_file})
 else:
     dataset = load_dataset("text", data_files={"train":train_file, "test":test_file})
+##
+logging.info(f'Loading data set: {data_set}')
+dataset = get_CHANGE_data(data_set)
 
 def tokenize_function(examples):
     return tokenizer(examples["text"], padding="max_length", truncation=True)
