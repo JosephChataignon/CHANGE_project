@@ -4,6 +4,7 @@ Helper file to hide the mess of getting data from various sources
 """
 import os
 import logging
+import unicodedata
 from datasets import load_dataset
 
 
@@ -34,7 +35,7 @@ def get_CHANGE_data(data_type):
         def substitute_chars(line):
             for k,v in character_pairs.items():
                 line['text'] = line['text'].replace(k,v)
-            return line
+            return unicodedata.normalize('NFC', line)
         # in Data_MaxPlanckInstitut/output, there are folders named as seg87, seg86b, seg01
         # and a maxplanckdata folder which contains all the txt files (duplicate of the seg* folders content)
         # actual data is in the seg*/input/*.txt
@@ -67,7 +68,7 @@ def get_CHANGE_data(data_type):
         def substitute_chars(line):
             for k,v in character_pairs.items():
                 line['text'] = line['text'].replace(k,v)
-            return line
+            return unicodedata.normalize('NFC', line)
         # just one file for each
         dataset = load_dataset("text", data_files={"train":f"{data_dir}output/seg01/input/seg01_1524_00000030.txt", 
                                                 "test":f"{data_dir}output/seg71/input/seg71_206422_00000318.txt",
@@ -83,7 +84,8 @@ def get_CHANGE_data(data_type):
 def load_substitutions(substitutions_file):
     """ This loads a file of substitutions where each line has 2 characters separated by a tab """
     logging.info(f'preparing to substitute characters in the dataset, from file: {substitutions_file}')
-    character_pairs = {}
+    # always replace superscript small E with umlaut/trema
+    character_pairs = {u'\u0308':u'\u0364'}
     # Read the file and extract character pairs
     with open(substitutions_file, 'r', encoding='utf-8') as f:
         for line in f:
