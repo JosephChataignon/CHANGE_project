@@ -27,7 +27,7 @@ def get_CHANGE_data(data_type):
         test_file  = data_dir + "test_dataset.txt"
         return load_dataset("text", data_files={"train":train_file, "test":test_file})
     
-    elif data_type.lower().replace('-','') == "maxplanck":
+    elif "maxplanck" in data_type.lower().replace('-',''):
         data_dir = '/research_storage/Data_MaxPlanckInstitut/'
         substitutions_file = data_dir + 'scripts/CHANGE_processing/unique_characters-replace.txt'
         # We will need to substitute some problematic characters with new ones
@@ -46,38 +46,29 @@ def get_CHANGE_data(data_type):
         # actual data is in the seg*/input/*.txt
         # command to display size (in lines) of each subdirectory (it takes quite long to execute):
         #       for dir in ./seg*/; do echo $dir $(ls $dir/input/*.txt | xargs cat | wc -l); done
-        data_seg = { 'train' : ["seg01","seg02","seg03","seg04","seg05","seg06","seg07","seg08","seg09","seg10",
-                                "seg11a","seg11b","seg12","seg13","seg14","seg15","seg16","seg17","seg18","seg19","seg20",
-                                "seg21","seg22","seg23","seg24","seg25","seg26","seg27","seg28","seg29","seg30",
-                                "seg31","seg32","seg33","seg34","seg35","seg36","seg37","seg38","seg39","seg40",
-                                "seg41","seg42","seg43","seg44","seg45","seg46","seg47","seg48","seg49","seg50",
-                                "seg51","seg52","seg53","seg54","seg55","seg56","seg57","seg58","seg59","seg60",
-                                "seg61","seg62","seg63","seg64","seg65","seg66","seg67","seg68","seg69","seg70",],
-                    'test' :   ["seg71","seg72","seg73","seg74","seg75","seg76","seg77","seg78","seg79",],
-                    'val'  :   ["seg80","seg81","seg82","seg83","seg84","seg85","seg86a","seg86b","seg87",],}
-        # replace the "segXX" with a path to txt files, using a * wildcard
-        data_files = {'train': [], 'test' : [], 'validation': []}, 
-        for type_ in data_seg.keys():
-            for seg in data_seg[type_]:
-                data_files[type_].append(f"{data_dir}output/{seg}/input/{seg}*.txt")
+        if 'test' in data_type.lower():
+            # if it's for testing, just use one file
+            dataset = load_dataset("text", 
+                    data_files={"train":f"{data_dir}output/seg01/input/seg01_1524_00000030.txt", 
+                                "test":f"{data_dir}output/seg71/input/seg71_206422_00000318.txt",
+                                "validation":f"{data_dir}output/seg80/input/seg80_231690_00000395.txt" })
+        else:
+            data_seg = { 'train' : ["seg01","seg02","seg03","seg04","seg05","seg06","seg07","seg08","seg09","seg10",
+                                    "seg11a","seg11b","seg12","seg13","seg14","seg15","seg16","seg17","seg18","seg19","seg20",
+                                    "seg21","seg22","seg23","seg24","seg25","seg26","seg27","seg28","seg29","seg30",
+                                    "seg31","seg32","seg33","seg34","seg35","seg36","seg37","seg38","seg39","seg40",
+                                    "seg41","seg42","seg43","seg44","seg45","seg46","seg47","seg48","seg49","seg50",
+                                    "seg51","seg52","seg53","seg54","seg55","seg56","seg57","seg58","seg59","seg60",
+                                    "seg61","seg62","seg63","seg64","seg65","seg66","seg67","seg68","seg69","seg70",],
+                        'test' :   ["seg71","seg72","seg73","seg74","seg75","seg76","seg77","seg78","seg79",],
+                        'val'  :   ["seg80","seg81","seg82","seg83","seg84","seg85","seg86a","seg86b","seg87",],}
+            # replace the "segXX" with a path to txt files, using a * wildcard
+            data_files = {'train': [], 'test' : [], 'validation': []}, 
+            for type_ in data_seg.keys():
+                for seg in data_seg[type_]:
+                    data_files[type_].append(f"{data_dir}output/{seg}/input/{seg}*.txt")
 
-        dataset = load_dataset("text", data_files=data_files)
-        dataset = dataset.map(substitute_chars)
-        return dataset
-    
-    elif data_type.lower().replace('-','') == "maxplancktest":
-        data_dir = '/research_storage/Data_MaxPlanckInstitut/'
-        substitutions_file = data_dir + 'scripts/CHANGE_processing/unique_characters-replace.txt'
-        # We will need to substitute some problematic characters with new ones
-        character_pairs = load_substitutions(substitutions_file)
-        def substitute_chars(line):
-            for k,v in character_pairs.items():
-                line['text'] = line['text'].replace(k,v)
-            return unicodedata.normalize('NFC', line)
-        # just one file for each
-        dataset = load_dataset("text", data_files={"train":f"{data_dir}output/seg01/input/seg01_1524_00000030.txt", 
-                                                "test":f"{data_dir}output/seg71/input/seg71_206422_00000318.txt",
-                                                "validation":f"{data_dir}output/seg80/input/seg80_231690_00000395.txt" })
+            dataset = load_dataset("text", data_files=data_files)
         dataset = dataset.map(substitute_chars)
         return dataset
         
