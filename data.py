@@ -40,7 +40,7 @@ def get_CHANGE_data(data_type):
             # convert string to Unicode's Normal Form C (NFC), grouping diacritics with letters when possible
             line['text'] = unicodedata.normalize('NFC', line['text'])
             # removing isolated diacritics (they should be the less common ones)
-            line['text'] = ''.join(c for c in line['text'] if unicodedata.category(c) != 'Mn')
+            line['text'] = ''.join(c for c in line['text'] if unicodedata.category(c) not in ['Mn','Ni','No','Lm','Lo'])
             return line
         # in Data_MaxPlanckInstitut/output, there are folders named as seg87, seg86b, seg01
         # and a maxplanckdata folder which contains all the txt files (duplicate of the seg* folders content)
