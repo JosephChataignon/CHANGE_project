@@ -205,13 +205,17 @@ logging.info(f"{train_start_time} - Starting training")
 try:
     #trainer.compute_loss = compute_loss
     train_result = trainer.train()
+    train_end_time = datetime.now()
+    logging.info(f"{train_end_time} - Training finished !")
 except Exception as e:
     train_end_time = datetime.now()
     logging.error(f"{train_end_time} - Training failed")
+    logging.info(f"Time spent until training starts: {train_start_time - start_time}")
+    logging.info(f"Time spent on training: {train_end_time - train_start_time}")
     display_CUDA_info(device)
     raise
-train_end_time = datetime.now()
-logging.info(f"{train_end_time} - Training finished !")
+
+# log some of the time spent
 logging.info(f"Time spent until training starts: {train_start_time - start_time}")
 logging.info(f"Time spent on training: {train_end_time - train_start_time}")
 
