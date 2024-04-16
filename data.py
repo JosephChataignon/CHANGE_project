@@ -35,6 +35,7 @@ def get_CHANGE_data(data_type):
         def substitute_chars(line):
             # do the substitution
             for k,v in character_pairs.items():
+                if v == "DEL": v=""
                 line['text'] = line['text'].replace(k,v)
             # convert string to Unicode's Normal Form C (NFC), grouping diacritics with letters when possible
             line['text'] = unicodedata.normalize('NFC', line['text'])
