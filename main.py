@@ -61,8 +61,8 @@ data_set = 'Max-Planck-test'
 
 
 ## Load model
-# model_name = "openai-gpt"
-model_name = "EleutherAI/pythia-70m"
+model_name = "openai-gpt"
+# model_name = "EleutherAI/pythia-70m"
 
 # load tokenizer
 tokenizer = AutoTokenizer.from_pretrained(model_name)
