@@ -64,7 +64,7 @@ def get_CHANGE_data(data_type):
                                     "seg51","seg52","seg53","seg54","seg55","seg56","seg57","seg58","seg59","seg60",
                                     "seg61","seg62","seg63","seg64","seg65","seg66","seg67","seg68","seg69","seg70",],
                         'test' :   ["seg71","seg72","seg73","seg74","seg75","seg76","seg77","seg78","seg79",],
-                        'val'  :   ["seg80","seg81","seg82","seg83","seg84","seg85","seg86a","seg86b","seg87",]}
+                        'validation'  :   ["seg80","seg81","seg82","seg83","seg84","seg85","seg86a","seg86b","seg87",]}
             # replace the "segXX" with a path to txt files, using a * wildcard
             data_files = defaultdict(list)
             for type_ in data_seg.keys():
