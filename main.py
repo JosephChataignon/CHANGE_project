@@ -57,12 +57,12 @@ display_CUDA_info(device)
 
 
 # get data files ("Walser" or "Max-Planck" or "Max-Planck-test")
-data_set = 'Max-Planck'
+data_set = 'Max-Planck-test'
 
 
 ## Load model
-model_name = "openai-gpt"
-# model_name = "EleutherAI/pythia-70m"
+# model_name = "openai-gpt"
+model_name = "EleutherAI/pythia-70m"
 
 # load tokenizer
 tokenizer = AutoTokenizer.from_pretrained(model_name)

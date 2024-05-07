@@ -73,6 +73,7 @@ def get_CHANGE_data(data_type):
 
             assert all(key in data_files for key in ["train", "test", "validation"]), f"Elements missing from the data files, only {data_files.keys()} are there."
             dataset = load_dataset("text", data_files=data_files)
+        logging.info(f"Data selection finished, now applying characters substitution")
         dataset = dataset.map(substitute_chars)
         return dataset
         
