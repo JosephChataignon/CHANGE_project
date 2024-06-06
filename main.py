@@ -67,32 +67,32 @@ model_name = "EleutherAI/pythia-70m"
 # load tokenizer
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 
-## Bitsandbytes quantization
-# bnb_config = BitsAndBytesConfig(
-#     load_in_4bit=True,
-#     bnb_4bit_use_double_quant=True,
-#     bnb_4bit_quant_type="nf4",
-#     bnb_4bit_compute_dtype=torch.bfloat16
-# )
-# model = AutoModelForCausalLM.from_pretrained(
-#     model_name,
-#     quantization_config=bnb_config,
-#     device_map="auto",
-#     use_cache = False
-# )
-## LoRA
-# #model.gradient_checkpointing_enable()
-# model = prepare_model_for_kbit_training(model) #peft function
-# loraconfig = LoraConfig(
-#     r=8,
-#     lora_alpha=32,
-#     target_modules=["query_key_value"],
-#     lora_dropout=0.05,
-#     bias="none",
-#     task_type="CAUSAL_LM"
-# )
-# model = get_peft_model(model, loraconfig)
-# print_trainable_parameters(model)
+# Bitsandbytes quantization
+bnb_config = BitsAndBytesConfig(
+    load_in_4bit=True,
+    bnb_4bit_use_double_quant=True,
+    bnb_4bit_quant_type="nf4",
+    bnb_4bit_compute_dtype=torch.bfloat16
+)
+model = AutoModelForCausalLM.from_pretrained(
+    model_name,
+    quantization_config=bnb_config,
+    device_map="auto",
+    use_cache = False
+)
+# LoRA
+#model.gradient_checkpointing_enable()
+model = prepare_model_for_kbit_training(model) #peft function
+loraconfig = LoraConfig(
+    r=8,
+    lora_alpha=32,
+    target_modules=["query_key_value"],
+    lora_dropout=0.05,
+    bias="none",
+    task_type="CAUSAL_LM"
+)
+model = get_peft_model(model, loraconfig)
+print_trainable_parameters(model)
 
 ## For quantization with GPTQ (no training afterward, inference only)
 # quantization_config = GPTQConfig(
@@ -102,7 +102,7 @@ tokenizer = AutoTokenizer.from_pretrained(model_name)
 # model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=quantization_config)
 
 ## Simple loading
-model = AutoModelForCausalLM.from_pretrained(model_name)
+#model = AutoModelForCausalLM.from_pretrained(model_name)
 
 metric = load_metric("accuracy")
 
@@ -173,28 +173,28 @@ training_args = TrainingArguments(
     eval_steps=0.1,
 )
 
-trainer = Trainer(
-    model=model,
-    args=training_args,
-    train_dataset=tokenized_datasets['train'],
-    eval_dataset=tokenized_datasets['test'],
-    data_collator=DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=False),
-    tokenizer=tokenizer,
-    #compute_metrics=metric,
-)
-# trainer = SFTTrainer(
-#     model,
+# trainer = Trainer(
+#     model=model,
 #     args=training_args,
 #     train_dataset=tokenized_datasets['train'],
 #     eval_dataset=tokenized_datasets['test'],
-#     tokenizer=tokenizer,
-#     peft_config=loraconfig,
-# #    dataset_text_field="text",
-# #    max_seq_length=2048,
-# #    data_collator=DataCollatorForCompletionOnlyLM(tokenizer=tokenizer,response_template="Answer:")
 #     data_collator=DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=False),
-#     dataset_text_field='text'
+#     tokenizer=tokenizer,
+#     #compute_metrics=metric,
 # )
+trainer = SFTTrainer(
+    model,
+    args=training_args,
+    train_dataset=tokenized_datasets['train'],
+    eval_dataset=tokenized_datasets['test'],
+    tokenizer=tokenizer,
+    peft_config=loraconfig,
+#    dataset_text_field="text",
+#    max_seq_length=2048,
+#    data_collator=DataCollatorForCompletionOnlyLM(tokenizer=tokenizer,response_template="Answer:")
+    data_collator=DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=False),
+    dataset_text_field='text'
+)
 
 
 
