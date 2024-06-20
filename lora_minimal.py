@@ -30,57 +30,60 @@ dataset = get_CHANGE_data("walser")
 
 # load tokenizer
 tokenizer = AutoTokenizer.from_pretrained(model_name)
+tokenizer.pad_token = tokenizer.eos_token
 
-# Bitsandbytes quantization
+
+qlora_config = LoraConfig(
+    r=16,
+    lora_alpha=32,
+    lora_dropout=0.05,
+    bias="none",
+    target_modules=["query_key_value", "dense", "dense_h_to_4h", "dense_4h_to_h"],
+    task_type="CAUSAL_LM"
+)
+
 bnb_config = BitsAndBytesConfig(
     load_in_4bit=True,
     bnb_4bit_use_double_quant=True,
     bnb_4bit_quant_type="nf4",
     bnb_4bit_compute_dtype=torch.bfloat16
 )
-model = AutoModelForCausalLM.from_pretrained(
+
+base_model = AutoModelForCausalLM.from_pretrained(
     model_name,
     quantization_config=bnb_config,
-    device_map="auto",
-    use_cache = False
+    trust_remote_code=True,
 )
-# LoRA
-#model.gradient_checkpointing_enable()
-model = prepare_model_for_kbit_training(model) #peft function
-loraconfig = LoraConfig(
-    r=8,
-    lora_alpha=32,
-    target_modules=["query_key_value"],
-    lora_dropout=0.05,
-    bias="none",
-    task_type="CAUSAL_LM"
-)
-model = get_peft_model(model, loraconfig)
-print_trainable_parameters(model)
 
-
-batch_size = 4
-args = TrainingArguments(
-    eval_strategy="epoch",
-    save_strategy="epoch",
-    learning_rate=5e-3,
-    per_device_train_batch_size=batch_size,
-    gradient_accumulation_steps=4,
-    per_device_eval_batch_size=batch_size,
+training_args = TrainingArguments(
+    output_dir="~", 
+    per_device_train_batch_size=4,
+    per_device_eval_batch_size=8,
+    gradient_accumulation_steps=2,
+    learning_rate=2e-4,
+    logging_steps=20,
+    logging_strategy="steps",
+    max_steps=100,
+    optim="paged_adamw_8bit",
     fp16=True,
-    num_train_epochs=5,
-    logging_steps=10,
-    load_best_model_at_end=True,
-    label_names=["labels"],
-    output_dir="~/CHANGE_project",
+    run_name="test-minimal-lora"
 )
 
-trainer = Trainer(
-    model,
-    args,
-    train_dataset=dataset['train'],
-    eval_dataset=dataset['test'],
+supervised_finetuning_trainer = SFTTrainer(
+    base_model,
+    train_dataset=dataset["train"],
+    args=training_args,
     tokenizer=tokenizer,
-    #data_collator=collate_fn,
+    peft_config=qlora_config,
+    dataset_text_field="text",
+    max_seq_length=2048,
+    data_collator=DataCollatorForCompletionOnlyLM(tokenizer=tokenizer)
 )
-trainer.train()
+
+supervised_finetuning_trainer.train()
+
+
+
+
+
+
