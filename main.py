@@ -57,7 +57,7 @@ display_CUDA_info(device)
 
 
 # get data files ("Walser" or "Max-Planck" or "Max-Planck-test")
-data_set = 'Max-Planck-test'
+data_set = 'walser'
 
 
 ## Load model
@@ -71,7 +71,6 @@ tokenizer.pad_token = tokenizer.eos_token
 # Bitsandbytes quantization
 bnb_config = BitsAndBytesConfig(
     load_in_4bit=True,
-    bnb_4bit_use_double_quant=True,
     bnb_4bit_quant_type="nf4",
     bnb_4bit_compute_dtype=torch.bfloat16
 )
@@ -79,21 +78,22 @@ model = AutoModelForCausalLM.from_pretrained(
     model_name,
     quantization_config=bnb_config,
     device_map="auto",
-    use_cache = False
+    use_cache = False,
+    trust_remote_code=True,
 )
 # LoRA
 #model.gradient_checkpointing_enable()
-model = prepare_model_for_kbit_training(model) #peft function
-loraconfig = LoraConfig(
-    r=8,
+#model = prepare_model_for_kbit_training(model) #peft function
+qlora_config = LoraConfig(
+    r=16,
     lora_alpha=32,
-    target_modules=["query_key_value"],
     lora_dropout=0.05,
     bias="none",
+    target_modules=["query_key_value", "dense", "dense_h_to_4h", "dense_4h_to_h"],
     task_type="CAUSAL_LM"
 )
-model = get_peft_model(model, loraconfig)
-print_trainable_parameters(model)
+#model = get_peft_model(model, loraconfig)
+
 
 ## For quantization with GPTQ (no training afterward, inference only)
 # quantization_config = GPTQConfig(
@@ -168,10 +168,15 @@ training_args = TrainingArguments(
     output_dir=config['SAVED_MODELS_DIR'],
     overwrite_output_dir=True,
     per_device_train_batch_size=4,
+    per_device_eval_batch_size=8,
     num_train_epochs=3,
     save_total_limit=5,
-    evaluation_strategy="steps",
-    eval_steps=0.1,
+    gradient_accumulation_steps=2,
+    learning_rate=2e-4,
+    logging_steps=20,
+    logging_strategy="steps",
+    max_steps=100,
+    run_name=instance_name,
 )
 
 # trainer = Trainer(
@@ -189,12 +194,11 @@ trainer = SFTTrainer(
     train_dataset=tokenized_datasets['train'],
     eval_dataset=tokenized_datasets['test'],
     tokenizer=tokenizer,
-    peft_config=loraconfig,
-#    dataset_text_field="text",
-#    max_seq_length=2048,
+    peft_config=qlora_config,
+    dataset_text_field="text",
+    max_seq_length=2048,
 #    data_collator=DataCollatorForCompletionOnlyLM(tokenizer=tokenizer,response_template="Answer:")
-    data_collator=DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=False),
-    dataset_text_field='text'
+#    data_collator=DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=False),
 )
 
 
