@@ -44,7 +44,6 @@ qlora_config = LoraConfig(
 
 bnb_config = BitsAndBytesConfig(
     load_in_4bit=True,
-    bnb_4bit_use_double_quant=True,
     bnb_4bit_quant_type="nf4",
     bnb_4bit_compute_dtype=torch.bfloat16
 )
@@ -53,6 +52,7 @@ base_model = AutoModelForCausalLM.from_pretrained(
     model_name,
     quantization_config=bnb_config,
     trust_remote_code=True,
+    device_map="auto",
 )
 
 training_args = TrainingArguments(
@@ -64,8 +64,6 @@ training_args = TrainingArguments(
     logging_steps=20,
     logging_strategy="steps",
     max_steps=100,
-    optim="paged_adamw_8bit",
-    fp16=True,
     run_name="test-minimal-lora"
 )
 
@@ -77,7 +75,6 @@ supervised_finetuning_trainer = SFTTrainer(
     peft_config=qlora_config,
     dataset_text_field="text",
     max_seq_length=2048,
-    data_collator=DataCollatorForCompletionOnlyLM(tokenizer=tokenizer)
 )
 
 supervised_finetuning_trainer.train()

@@ -66,6 +66,7 @@ model_name = "EleutherAI/pythia-70m"
 
 # load tokenizer
 tokenizer = AutoTokenizer.from_pretrained(model_name)
+tokenizer.pad_token = tokenizer.eos_token
 
 # Bitsandbytes quantization
 bnb_config = BitsAndBytesConfig(
