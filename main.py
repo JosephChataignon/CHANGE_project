@@ -117,8 +117,8 @@ logging.info(f'Model loaded: {model_name}')
 logging.info(f'Output (fine-tuned) model will be saved with the name: {instance_name}')
 
 # move it to the GPU
-model.to(device)
-display_CUDA_info(device)
+#model.to(device)
+#display_CUDA_info(device)
 
 # fix tokenizer issue
 if tokenizer.pad_token is None:
