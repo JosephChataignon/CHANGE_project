@@ -37,36 +37,41 @@ config  = dotenv_values(env_file)
 assert 'LOGS_FOLDER' in config, f'Could not find variable LOGS_FOLDER in .env file: {env_file}'
 assert 'SAVED_MODELS_DIR' in config, f'Could not find variable SAVED_MODELS_DIR in .env file: {env_file}'
 
+## Setup logging
 start_time = datetime.now()
-
 date_str = start_time.isoformat()[:19]
 log_file = f"{config['LOGS_FOLDER']}/{date_str}_{os.path.basename(__file__)}.log"
 root_logger = logging.getLogger()
 transformers_logger = transformers.logging.get_logger()
 setup_logging(log_file, root_logger, transformers_logger)
 
-
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+# logs CUDA info with DEBUG level
+display_CUDA_info(device)
 
 logging.info("Setup finished, starting script\n\n")
 
 
 
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-# logs CUDA info with DEBUG level
-display_CUDA_info(device)
-
+## Set parameters
 
 # get data files ("Walser" or "Max-Planck" or "Max-Planck-test")
 data_set = 'walser'
 
-
-## Load model
+## Chose model
 # model_name = "openai-gpt"
-model_name = "EleutherAI/pythia-70m"
+model_name = "EleutherAI/pythia-400m"
 
-# load tokenizer
+# load and fix tokenizer
 tokenizer = AutoTokenizer.from_pretrained(model_name)
-tokenizer.pad_token = tokenizer.eos_token
+
+if tokenizer.pad_token is None:
+    tokenizer.pad_token = tokenizer.eos_token
+    #tokenizer.add_special_tokens({'pad_token': '[PAD]'})
+    #model.resize_token_embeddings(len(tokenizer))
+
+
+## Training configuration
 
 # Bitsandbytes quantization
 bnb_config = BitsAndBytesConfig(
@@ -74,16 +79,15 @@ bnb_config = BitsAndBytesConfig(
     bnb_4bit_quant_type="nf4",
     bnb_4bit_compute_dtype=torch.bfloat16
 )
+# Load base model
 model = AutoModelForCausalLM.from_pretrained(
     model_name,
-    quantization_config=bnb_config,
+    #quantization_config=bnb_config,
     device_map="auto",
     use_cache = False,
     trust_remote_code=True,
 )
 # LoRA
-#model.gradient_checkpointing_enable()
-#model = prepare_model_for_kbit_training(model) #peft function
 qlora_config = LoraConfig(
     r=16,
     lora_alpha=32,
@@ -92,20 +96,19 @@ qlora_config = LoraConfig(
     target_modules=["query_key_value", "dense", "dense_h_to_4h", "dense_4h_to_h"],
     task_type="CAUSAL_LM"
 )
-#model = get_peft_model(model, loraconfig)
-
+# GPTQ
+quantization_config = GPTQConfig(
+    bits=4,
+    dataset = "ptb", # default is "c4" for calibration dataset
+    tokenizer=tokenizer
+)
 
 ## For quantization with GPTQ (no training afterward, inference only)
-# quantization_config = GPTQConfig(
-#     bits=4,
-#     dataset = "ptb", # default is "c4" for calibration dataset
-#     tokenizer=tokenizer)
 # model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=quantization_config)
 
 ## Simple loading
-#model = AutoModelForCausalLM.from_pretrained(model_name)
+model = AutoModelForCausalLM.from_pretrained(model_name)
 
-metric = load_metric("accuracy")
 
 
 
@@ -120,10 +123,6 @@ logging.info(f'Output (fine-tuned) model will be saved with the name: {instance_
 #model.to(device)
 #display_CUDA_info(device)
 
-# fix tokenizer issue
-if tokenizer.pad_token is None:
-    tokenizer.add_special_tokens({'pad_token': '[PAD]'})
-    model.resize_token_embeddings(len(tokenizer))
 
 ## Load and tokenize dataset
 logging.info(f'Loading data set: {data_set}')
@@ -179,27 +178,24 @@ training_args = TrainingArguments(
     run_name=instance_name,
 )
 
-# trainer = Trainer(
-#     model=model,
-#     args=training_args,
-#     train_dataset=tokenized_datasets['train'],
-#     eval_dataset=tokenized_datasets['test'],
-#     data_collator=DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=False),
-#     tokenizer=tokenizer,
-#     #compute_metrics=metric,
-# )
-trainer = SFTTrainer(
-    model,
+trainer = Trainer(
+    model=model,
     args=training_args,
     train_dataset=tokenized_datasets['train'],
     eval_dataset=tokenized_datasets['test'],
+    data_collator=DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=False),
     tokenizer=tokenizer,
-    peft_config=qlora_config,
-    dataset_text_field="text",
-    max_seq_length=2048,
-#    data_collator=DataCollatorForCompletionOnlyLM(tokenizer=tokenizer,response_template="Answer:")
-#    data_collator=DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=False),
 )
+# trainer = SFTTrainer(
+#     model,
+#     args=training_args,
+#     train_dataset=tokenized_datasets['train'],
+#     eval_dataset=tokenized_datasets['test'],
+#     tokenizer=tokenizer,
+#     peft_config=qlora_config,
+#     dataset_text_field="text",
+#     max_seq_length=2048,
+# )
 
 
 
