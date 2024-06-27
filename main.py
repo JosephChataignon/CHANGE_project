@@ -108,8 +108,8 @@ quantization_config = GPTQConfig(
 
 ## Simple loading
 model = AutoModelForCausalLM.from_pretrained(model_name)
-
-
+model.to(device)
+display_CUDA_info(device)
 
 
 
@@ -118,10 +118,6 @@ model = AutoModelForCausalLM.from_pretrained(model_name)
 instance_name = f"{model_name.replace('/','-')}_finetuned-on_{data_set}_{start_time.date()}"
 logging.info(f'Model loaded: {model_name}')
 logging.info(f'Output (fine-tuned) model will be saved with the name: {instance_name}')
-
-# move it to the GPU
-#model.to(device)
-#display_CUDA_info(device)
 
 
 ## Load and tokenize dataset
