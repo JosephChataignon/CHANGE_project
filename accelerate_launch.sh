@@ -5,8 +5,8 @@
 #SBATCH --partition=gpu
 #SBATCH --qos=job_gpu
 #SBATCH --gres=gpu:teslap100:2
-#SBATCH --cpus-per-task=4
-#SBATCH --mem-per-cpu=16G
+#SBATCH --cpus-per-task=2
+#SBATCH --mem-per-cpu=8G
 #SBATCH --time=12:00:00
 
 echo "date: $(date)"
