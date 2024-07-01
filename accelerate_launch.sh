@@ -43,8 +43,9 @@ echo "The code of the latest commit is available at:"
 echo "https://github.com/JosephChataignon/CHANGE_project/commit/$(git rev-parse HEAD)"
 
 echo " === "
-echo "Executing Python script: $fullscriptpath , in Singularity container: ubuntu_env.sif"
+echo "Executing Python script: $fullscriptpath , in Apptainer container: ubuntu_env.sif"
 apptainer exec --nv \
     --bind /storage/research/wbkolleg_dh_1:/research_storage \
+    --bind /software.9:/software.9 \
     ~/ubuntu_env.sif \
     accelerate launch --config_file accelerate_config_2gpu.yaml "$fullscriptpath"
