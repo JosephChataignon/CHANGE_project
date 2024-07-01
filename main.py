@@ -175,7 +175,7 @@ training_args = TrainingArguments(
     logging_steps=20,
     logging_strategy="steps",
     max_steps=100,
-    fp16=True,
+    bf16=True,
     local_rank=-1,
     run_name=instance_name,
 )

@@ -22,7 +22,7 @@
   "gradient_accumulation_steps": 2,
   "train_batch_size": 16,
   "train_micro_batch_size_per_gpu": 4,
-  "fp16": {
+  "bf16": {
     "enabled": true
   }
 }
