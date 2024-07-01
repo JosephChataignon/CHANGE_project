@@ -110,7 +110,6 @@ quantization_config = GPTQConfig(
 ## Simple loading
 model = AutoModelForCausalLM.from_pretrained(model_name)
 model.to(device)
-display_CUDA_info(device)
 
 
 
@@ -118,6 +117,7 @@ display_CUDA_info(device)
 # set name where the trained model will be saved
 instance_name = f"{model_name.replace('/','-')}_finetuned-on_{data_set}_{start_time.date()}"
 logging.info(f'Model loaded: {model_name}')
+display_CUDA_info(device)
 logging.info(f'Output (fine-tuned) model will be saved with the name: {instance_name}')
 
 
@@ -158,6 +158,9 @@ result = inference_test('Once upon a time, there was a',model,tokenizer,device)
 logging.info("Testing that inference works:\n" + result)
 
 
+## for Accelerate use
+accelerator = Accelerator()
+model = accelerator.prepare(model)
 
 # Define training arguments
 training_args = TrainingArguments(
@@ -197,7 +200,6 @@ trainer = Trainer(
 # )
 
 ## for Accelerate use
-accelerator = Accelerator()
 trainer = accelerator.prepare(trainer)
 
 
