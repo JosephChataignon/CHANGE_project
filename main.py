@@ -14,6 +14,7 @@ import transformers
 from transformers import pipeline, AutoTokenizer, AutoModelForCausalLM, TrainingArguments, GPTQConfig
 from transformers import Trainer, LineByLineTextDataset, TextDataset, DataCollatorForLanguageModeling
 from transformers import BitsAndBytesConfig
+from accelerate import Accelerator
 from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
 from trl import SFTTrainer, DataCollatorForCompletionOnlyLM
 
@@ -182,6 +183,8 @@ trainer = Trainer(
     data_collator=DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=False),
     tokenizer=tokenizer,
 )
+
+## for QLoRA training
 # trainer = SFTTrainer(
 #     model,
 #     args=training_args,
@@ -193,7 +196,9 @@ trainer = Trainer(
 #     max_seq_length=2048,
 # )
 
-
+## for Accelerate use
+accelerator = Accelerator()
+trainer = accelerator.prepare(trainer)
 
 
 
