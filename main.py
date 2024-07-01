@@ -160,23 +160,17 @@ logging.info("Testing that inference works:\n" + result)
 
 ## for Accelerate use
 accelerator = Accelerator()
-model = accelerator.prepare(model)
 
 # Define training arguments
 training_args = TrainingArguments(
     output_dir=config['SAVED_MODELS_DIR'],
     overwrite_output_dir=True,
-    per_device_train_batch_size=4,
-    per_device_eval_batch_size=8,
     num_train_epochs=3,
-    save_total_limit=5,
-    gradient_accumulation_steps=2,
+    save_steps=10_000,
+    save_total_limit=2,
     learning_rate=2e-4,
     logging_steps=20,
-    logging_strategy="steps",
     max_steps=100,
-    bf16=True,
-    local_rank=-1,
     run_name=instance_name,
 )
 

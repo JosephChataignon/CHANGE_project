@@ -1,19 +1,9 @@
 compute_environment: LOCAL_MACHINE
 debug: true
+distributed_type: DEEPSPEED
 deepspeed_config:
   deepspeed_config_file: /storage/homefs/jc23c442/CHANGE_project/ds_config.json
-  zero3_init_flag: false
-distributed_type: DEEPSPEED
-downcast_bf16: 'no'
-mixed_precision: 'bf16'
-enable_cpu_affinity: false
-machine_rank: 0
-main_training_function: main
-num_machines: 1
 num_processes: 2
-rdzv_backend: static
-same_network: true
-tpu_env: []
-tpu_use_cluster: false
-tpu_use_sudo: false
-use_cpu: false
+num_machines: 1
+machine_rank: 0
+
