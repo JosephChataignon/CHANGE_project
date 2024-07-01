@@ -60,15 +60,14 @@ def log_system_info():
 
 def display_CUDA_info(device):
     logging.debug(f"CUDA available: {torch.cuda.is_available()}")
-    logging.debug(f"Devices available: {[torch.cuda.device(i) for i in range(torch.cuda.device_count())]}")
+    logging.debug(f"{torch.cuda.device_count()} Devices available: {[torch.cuda.device(i) for i in range(torch.cuda.device_count())]}")
     if device.type == 'cuda':
         debug_str = f"Now using device: {device}"
         for i in range(torch.cuda.device_count()):
-            debug_str += '\n\t'+torch.cuda.get_device_name(i)
-            debug_str += '\n\tMemory Usage:'
-            debug_str += f'\n\t\tTotal available: {round(torch.cuda.get_device_properties(i).total_memory/1024**3,1)} GB'
-            debug_str += f'\n\t\tAllocated: {round(torch.cuda.memory_allocated(i)/1024**3,1)} GB'
-            debug_str += f'\n\t\tCached:    {round(torch.cuda.memory_reserved(i) /1024**3,1)} GB'
+            debug_str += '\n\t'+torch.cuda.get_device_name(i)+f" - device {1}"
+            debug_str += f'\n\t\tTotal memory available: {round(torch.cuda.get_device_properties(i).total_memory/1024**3,1)} GB'
+            debug_str += f'\n\t\tAllocated memory: {round(torch.cuda.memory_allocated(i)/1024**3,1)} GB'
+            debug_str += f'\n\t\tCached memory:    {round(torch.cuda.memory_reserved(i) /1024**3,1)} GB'
         logging.debug(debug_str)
     logging.debug(f'The default location for tensors is: {torch.rand(3).device}')
 
