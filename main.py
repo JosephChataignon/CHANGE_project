@@ -61,7 +61,7 @@ data_set = 'walser'
 
 ## Chose model
 # model_name = "openai-gpt"
-model_name = "EleutherAI/pythia-400m"
+model_name = "EleutherAI/pythia-410m"
 
 # load and fix tokenizer
 tokenizer = AutoTokenizer.from_pretrained(model_name)
@@ -204,6 +204,7 @@ trainer = accelerator.prepare(trainer)
 
 
 
+display_CUDA_info(device)
 train_start_time = datetime.now()
 logging.info(f"{train_start_time} - Starting training")
 try:
