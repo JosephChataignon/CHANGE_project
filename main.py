@@ -211,6 +211,7 @@ try:
     train_result = trainer.train()
     train_end_time = datetime.now()
     logging.info(f"{train_end_time} - Training finished !")
+    display_CUDA_info(device)
 except Exception as e:
     train_end_time = datetime.now()
     logging.error(f"{train_end_time} - Training failed")
