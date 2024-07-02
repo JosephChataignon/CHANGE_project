@@ -172,8 +172,7 @@ training_args = TrainingArguments(
     save_total_limit=2,
     learning_rate=2e-4,
     bf16=True,  # Enable BF16 to match DeepSpeed's bf16 setting
-    logging_steps=20,
-    max_steps=100,
+    logging_steps=100,
     logging_strategy="steps",
     run_name=instance_name,
 )
