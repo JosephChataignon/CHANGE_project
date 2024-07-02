@@ -165,12 +165,16 @@ accelerator = Accelerator()
 training_args = TrainingArguments(
     output_dir=config['SAVED_MODELS_DIR'],
     overwrite_output_dir=True,
+    per_device_train_batch_size=4,  # Set this to match DeepSpeed's train_micro_batch_size_per_gpu
+    per_device_eval_batch_size=8,
     num_train_epochs=3,
-    save_steps=10_000,
+    gradient_accumulation_steps=2,  # Set this to match DeepSpeed's gradient_accumulation_steps
     save_total_limit=2,
     learning_rate=2e-4,
+    bf16=True,  # Enable BF16 to match DeepSpeed's bf16 setting
     logging_steps=20,
     max_steps=100,
+    logging_strategy="steps",
     run_name=instance_name,
 )
 
