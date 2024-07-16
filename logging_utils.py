@@ -6,10 +6,15 @@ and in logging some informations
 
 import sys, logging, traceback
 import torch, transformers
+from datetime import datetime
+from transformers.integrations import TensorBoardCallback
 
 
-
-def setup_logging(filename, root_logger, transformers_logger):
+# Setup the logging module and create and return a tensorboardCallback instance
+def setup_logging(config, root_logger, transformers_logger):
+    date_str = datetime.now().isoformat()[:19]
+    log_file = f"{config['LOGS_FOLDER']}/{date_str}_{os.path.basename(__file__)}.log"
+    ## Setup the logging module
     root_logger.setLevel(logging.DEBUG)
     root_logger.handlers = []
     log_format = logging.Formatter('%(asctime)s %(levelname)s : %(message)s')
@@ -42,6 +47,9 @@ def setup_logging(filename, root_logger, transformers_logger):
         log_system_info()
     # log uncaught exceptions
     sys.excepthook = log_exceptions
+    ## Create and return tensorboardCallback
+    return TensorBoardCallback()
+
 
 def log_exceptions(exc_type, exc_value, exc_traceback, logging=logging):
     logging.error("Uncaught exception", exc_info=(exc_type, exc_value, exc_traceback))

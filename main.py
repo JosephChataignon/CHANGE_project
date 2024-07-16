@@ -40,11 +40,9 @@ assert 'SAVED_MODELS_DIR' in config, f'Could not find variable SAVED_MODELS_DIR 
 
 ## Setup logging
 start_time = datetime.now()
-date_str = start_time.isoformat()[:19]
-log_file = f"{config['LOGS_FOLDER']}/{date_str}_{os.path.basename(__file__)}.log"
 root_logger = logging.getLogger()
 transformers_logger = transformers.logging.get_logger()
-setup_logging(log_file, root_logger, transformers_logger)
+tensorboard_callback = setup_logging(config, root_logger, transformers_logger)
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 # logs CUDA info with DEBUG level
@@ -164,6 +162,7 @@ accelerator = Accelerator()
 # Define training arguments
 training_args = TrainingArguments(
     output_dir=config['SAVED_MODELS_DIR'],
+    logging_dir=config['LOGS_FOLDER'],
     overwrite_output_dir=True,
     per_device_train_batch_size=4,  # Set this to match DeepSpeed's train_micro_batch_size_per_gpu
     per_device_eval_batch_size=8,
@@ -184,6 +183,7 @@ trainer = Trainer(
     eval_dataset=tokenized_datasets['test'],
     data_collator=DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=False),
     tokenizer=tokenizer,
+    callbacks=[tensorboard_callback],
 )
 
 ## for QLoRA training
