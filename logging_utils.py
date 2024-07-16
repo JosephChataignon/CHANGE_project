@@ -4,7 +4,7 @@ Helper file intended to help in setting up the logs
 and in logging some informations
 """
 
-import sys, logging, traceback
+import os, sys, logging, traceback
 import torch, transformers
 from datetime import datetime
 from transformers.integrations import TensorBoardCallback
