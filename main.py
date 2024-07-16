@@ -98,7 +98,7 @@ qlora_config = LoraConfig(
 # GPTQ
 quantization_config = GPTQConfig(
     bits=4,
-    dataset = "ptb", # default is "c4" for calibration dataset
+    dataset = "c4", # default is "c4" for calibration dataset
     tokenizer=tokenizer
 )
 
