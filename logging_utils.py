@@ -13,7 +13,7 @@ from transformers.integrations import TensorBoardCallback
 # Setup the logging module and create and return a tensorboardCallback instance
 def setup_logging(config, root_logger, transformers_logger):
     date_str = datetime.now().isoformat()[:19]
-    log_file = f"{config['LOGS_FOLDER']}/{date_str}_{os.path.basename(__file__)}.log"
+    filename = f"{config['LOGS_FOLDER']}/{date_str}_{os.path.basename(__file__)}.log"
     ## Setup the logging module
     root_logger.setLevel(logging.DEBUG)
     root_logger.handlers = []
