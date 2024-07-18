@@ -94,7 +94,6 @@ def print_trainable_parameters(model):
 
 
 def get_tb_callback(config,run_name):
-
     return CustomTensorBoardCallback(tb_dir=config['LOGS_FOLDER']+'/TensorBoard'+run_name)
 
 class CustomTensorBoardCallback(TensorBoardCallback):
