@@ -29,7 +29,7 @@ from datasets import load_metric
 
 # in interactive sessions, uncomment this line:
 #sys.path.insert(0, r'/path/to/code/folder')
-from logging_utils import setup_logging, display_CUDA_info, print_trainable_parameters
+from logging_utils import setup_logging, display_CUDA_info, print_trainable_parameters, get_tb_callback
 from data import get_CHANGE_data
 
 ## Load environment variables
