@@ -42,7 +42,7 @@ assert 'SAVED_MODELS_DIR' in config, f'Could not find variable SAVED_MODELS_DIR 
 start_time = datetime.now()
 root_logger = logging.getLogger()
 transformers_logger = transformers.logging.get_logger()
-tensorboard_callback = setup_logging(config, root_logger, transformers_logger)
+setup_logging(config, root_logger, transformers_logger)
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 # logs CUDA info with DEBUG level
@@ -117,6 +117,7 @@ instance_name = f"{model_name.replace('/','-')}_finetuned-on_{data_set}_{start_t
 logging.info(f'Model loaded: {model_name}')
 display_CUDA_info(device)
 logging.info(f'Output (fine-tuned) model will be saved with the name: {instance_name}')
+tensorboard_callback = get_tb_callback(config,instance_name)
 
 
 ## Load and tokenize dataset

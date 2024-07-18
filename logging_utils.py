@@ -10,7 +10,7 @@ from datetime import datetime
 from transformers.integrations import TensorBoardCallback
 
 
-# Setup the logging module and create and return a tensorboardCallback instance
+# Setup the logging module
 def setup_logging(config, root_logger, transformers_logger):
     date_str = datetime.now().isoformat()[:19]
     filename = f"{config['LOGS_FOLDER']}/{date_str}_{os.path.basename(__file__)}.log"
@@ -47,8 +47,6 @@ def setup_logging(config, root_logger, transformers_logger):
         log_system_info()
     # log uncaught exceptions
     sys.excepthook = log_exceptions
-    ## Create and return tensorboardCallback
-    return TensorBoardCallback()
 
 
 def log_exceptions(exc_type, exc_value, exc_traceback, logging=logging):
@@ -95,8 +93,27 @@ def print_trainable_parameters(model):
     )
 
 
+def get_tb_callback(config,run_name):
 
+    return CustomTensorBoardCallback(tb_dir=config['LOGS_FOLDER']+'/TensorBoard'+run_name)
 
+class CustomTensorBoardCallback(TensorBoardCallback):
+    def __init__(self, tb_writer=None, tb_dir=None):
+        super().__init__()
+        self.tb_dir = tb_dir
+        self.tb_writer = tb_writer
+
+    def on_init_end(self, args, state, control, **kwargs):
+        if self.tb_writer is None:
+            from torch.utils.tensorboard import SummaryWriter
+
+            self.tb_writer = SummaryWriter(log_dir=self.tb_dir)
+        self.tb_writer.add_text("args", repr(args))
+
+    def on_train_end(self, args, state, control, **kwargs):
+        super().on_train_end(args, state, control, **kwargs)
+        if self.tb_writer:
+            self.tb_writer.close()
 
 
 
