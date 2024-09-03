@@ -6,7 +6,7 @@ Define custom models here
 import torch.nn as nn
 from transformers import AutoModel, AutoTokenizer, Trainer, TrainingArguments
 
-class truncatedLlama3(nn.Module):
+class truncatedLlama2(nn.Module):
     '''Takes the first 3 layers of Llama2 and adds a linear layer on top'''
     def __init__(self):
         super(truncatedLlama3, self).__init__()

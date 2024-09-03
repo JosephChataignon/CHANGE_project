@@ -31,7 +31,7 @@ from datasets import load_metric
 #sys.path.insert(0, r'/path/to/code/folder')
 from logging_utils import setup_logging, display_CUDA_info, print_trainable_parameters, get_tb_callback
 from data import get_CHANGE_data
-from models import LSTMModel
+from models import truncatedLlama2
 
 ## Load environment variables
 env_file = '.env' # for interactive sessions change to the correct path
@@ -60,10 +60,10 @@ data_set = 'walser'
 
 ## Chose model
 # model_name = "openai-gpt"
-model_name = "Custom-model-3x256LSTM"
+model_name = "Custom-model-truncLlama"
 
 # tokenizer_name = model_name # Usual case
-tokenizer_name = "EleutherAI/pythia-410m"
+tokenizer_name = "meta-llama/Llama-2-7b-hf"
 
 
 # load and fix tokenizer
@@ -112,7 +112,7 @@ quantization_config = GPTQConfig(
 
 ## Simple loading
 #model = AutoModelForCausalLM.from_pretrained(model_name)
-model = LSTMModel(vocab_size=tokenizer.vocab_size, embedding_dim=256, hidden_dim=512, n_layers=3)
+model = truncatedLlama2()
 model.to(device)
 
 
