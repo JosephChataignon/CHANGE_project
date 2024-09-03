@@ -36,8 +36,11 @@ from models import truncatedLlama2
 ## Load environment variables
 env_file = '.env' # for interactive sessions change to the correct path
 config  = dotenv_values(env_file)
-assert 'LOGS_FOLDER' in config, f'Could not find variable LOGS_FOLDER in .env file: {env_file}'
-assert 'SAVED_MODELS_DIR' in config, f'Could not find variable SAVED_MODELS_DIR in .env file: {env_file}'
+for env_var in ['LOGS_FOLDER','SAVED_MODELS_DIR', 'HUGGINGFACE_TOKEN_FILE']:
+    assert env_var in config, f'Could not find variable {env_var} in .env file: {env_file}'
+# extract Huggingface token
+with open(config['HUGGINGFACE_TOKEN_FILE'], 'r') as file:
+    hf_token = file.read().strip()
 
 ## Setup logging
 start_time = datetime.now()
@@ -112,7 +115,7 @@ quantization_config = GPTQConfig(
 
 ## Simple loading
 #model = AutoModelForCausalLM.from_pretrained(model_name)
-model = truncatedLlama2()
+model = truncatedLlama2(use_auth_token=hf_token)
 model.to(device)
 
 

@@ -1,7 +1,9 @@
-# project-specific
+## Project-specific
 logs/
 saved_models/
+# Access tokens: git, huggingface
 .git_token
+.hf_token
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
