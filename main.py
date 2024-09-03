@@ -84,13 +84,13 @@ bnb_config = BitsAndBytesConfig(
     bnb_4bit_compute_dtype=torch.bfloat16
 )
 # Load base model
-model = AutoModelForCausalLM.from_pretrained(
-    model_name,
-    #quantization_config=bnb_config,
-    device_map="auto",
-    use_cache = False,
-    trust_remote_code=True,
-)
+# model = AutoModelForCausalLM.from_pretrained(
+#     model_name,
+#     #quantization_config=bnb_config,
+#     device_map="auto",
+#     use_cache = False,
+#     trust_remote_code=True,
+# )
 # LoRA
 qlora_config = LoraConfig(
     r=16,
