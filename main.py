@@ -31,6 +31,7 @@ from datasets import load_metric
 #sys.path.insert(0, r'/path/to/code/folder')
 from logging_utils import setup_logging, display_CUDA_info, print_trainable_parameters, get_tb_callback
 from data import get_CHANGE_data
+from models import LSTMModel
 
 ## Load environment variables
 env_file = '.env' # for interactive sessions change to the correct path
@@ -59,10 +60,14 @@ data_set = 'walser'
 
 ## Chose model
 # model_name = "openai-gpt"
-model_name = "EleutherAI/pythia-410m"
+model_name = "Custom-model-3x256LSTM"
+
+# tokenizer_name = model_name # Usual case
+tokenizer_name = "EleutherAI/pythia-410m"
+
 
 # load and fix tokenizer
-tokenizer = AutoTokenizer.from_pretrained(model_name)
+tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
 
 if tokenizer.pad_token is None:
     tokenizer.pad_token = tokenizer.eos_token
@@ -106,7 +111,8 @@ quantization_config = GPTQConfig(
 # model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=quantization_config)
 
 ## Simple loading
-model = AutoModelForCausalLM.from_pretrained(model_name)
+#model = AutoModelForCausalLM.from_pretrained(model_name)
+model = LSTMModel(vocab_size=tokenizer.vocab_size, embedding_dim=256, hidden_dim=512, n_layers=3)
 model.to(device)
 
 
