@@ -4,20 +4,22 @@ Define custom models here
 """
 
 import torch.nn as nn
-import torch
+from transformers import AutoModel, AutoTokenizer, Trainer, TrainingArguments
 
-class LSTMModel(nn.Module):
-    def __init__(self, vocab_size, embedding_dim, hidden_dim, n_layers):
-        super(LSTMModel, self).__init__()
-        self.embedding = nn.Embedding(vocab_size, embedding_dim)
-        self.lstm = nn.LSTM(embedding_dim, hidden_dim, n_layers, batch_first=True)
-        self.linear = nn.Linear(hidden_dim, vocab_size)
+class truncatedLlama3(nn.Module):
+    '''Takes the first 3 layers of Llama2 and adds a linear layer on top'''
+    def __init__(self):
+        super(truncatedLlama3, self).__init__()
+        self.model = AutoModel.from_pretrained("meta-llama/Llama-2-7b-hf", output_hidden_states=True)
+        self.tokenizer = AutoTokenizer.from_pretrained("meta-llama/Llama-2-7b-hf")
+        self.model = nn.Sequential(*list(self.model.children())[:3])  # Slice the model after the 3rd layer
+        self.fc = nn.Linear(self.model.config.hidden_size, 4096)
 
-    def forward(self, inputs):
-        embeds = self.embedding(inputs)
-        lstm_out, _ = self.lstm(embeds)
-        out = self.linear(lstm_out)
-        return out
+    def forward(self, input_ids, attention_mask=None, token_type_ids=None):
+        outputs = self.model(input_ids, attention_mask, token_type_ids)
+        hidden_states = outputs.hidden_states[3]  # Get the output of the 3rd layer
+        logits = self.fc(hidden_states)
+        return logits
 
 
 
