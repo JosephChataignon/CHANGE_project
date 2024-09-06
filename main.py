@@ -115,7 +115,7 @@ quantization_config = GPTQConfig(
 
 ## Simple loading
 #model = AutoModelForCausalLM.from_pretrained(model_name)
-model = truncatedLlama2(use_auth_token=hf_token)
+model = truncatedLlama2(id_token=hf_token)
 model.to(device)
 
 
