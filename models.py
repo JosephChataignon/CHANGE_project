@@ -8,8 +8,8 @@ from transformers import AutoModel, AutoTokenizer, Trainer, TrainingArguments
 
 class truncatedLlama2(nn.Module):
     '''Takes the first 3 layers of Llama2 and adds a linear layer on top'''
-    def __init__(self):
-        super(truncatedLlama3, self, id_token).__init__()
+    def __init__(self, id_token):
+        super(truncatedLlama2, self).__init__()
         self.model = AutoModel.from_pretrained("meta-llama/Llama-2-7b-hf", use_auth_token=id_token, output_hidden_states=True)
         self.tokenizer = AutoTokenizer.from_pretrained("meta-llama/Llama-2-7b-hf", use_auth_token=id_token)
         self.model = nn.Sequential(*list(self.model.children())[:3])  # Slice the model after the 3rd layer
