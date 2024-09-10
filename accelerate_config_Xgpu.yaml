@@ -1,0 +1,9 @@
+compute_environment: LOCAL_MACHINE
+debug: true
+distributed_type: DEEPSPEED
+deepspeed_config:
+  deepspeed_config_file: /storage/homefs/jc23c442/CHANGE_project/ds_config.json
+num_processes: 4 # change number of GPUs here
+num_machines: 1
+machine_rank: 0
+
