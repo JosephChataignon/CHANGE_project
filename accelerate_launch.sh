@@ -48,4 +48,4 @@ apptainer exec --nv \
     --bind /storage/research/wbkolleg_dh_1:/research_storage \
     --bind /software.9:/software.9 \
     ~/ubuntu_env.sif \
-    accelerate launch --config_file ~/CHANGE_project/accelerate_config_4gpu.yaml "$fullscriptpath"
+    accelerate launch --config_file ~/CHANGE_project/accelerate_config_Xgpu.yaml "$fullscriptpath"
