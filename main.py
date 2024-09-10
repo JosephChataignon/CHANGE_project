@@ -120,10 +120,10 @@ model.to(device)
 
 
 
-
 # set name where the trained model will be saved
 instance_name = f"{model_name.replace('/','-')}_finetuned-on_{data_set}_{start_time}"
 logging.info(f'Model loaded: {model_name}')
+logging.info(model)
 display_CUDA_info(device)
 logging.info(f'Output (fine-tuned) model will be saved with the name: {instance_name}')
 tensorboard_callback = get_tb_callback(config,instance_name)
