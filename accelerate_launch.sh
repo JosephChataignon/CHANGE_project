@@ -41,7 +41,7 @@ case $ENVIRONMENT in
     dhserver)
         CHANGE_PROJ_DIR="/home/joseph/CHANGE_project"
         STORAGE_DIR="/mnt/wbkolleg_dh_1"
-        SOFTWARE_BIND=""
+        SOFTWARE_BIND="--bind /usr/local/cuda:/usr/local/cuda"
         ACCELERATE_CONFIG="accelerate_config_DHserver.yaml"
         ;;
     *)
