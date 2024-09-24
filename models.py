@@ -13,7 +13,7 @@ class truncatedLlama2(torch.nn.Module):
         self.model = AutoModel.from_pretrained("meta-llama/Llama-2-7b-hf", use_auth_token=id_token, output_hidden_states=True)
         self.tokenizer = AutoTokenizer.from_pretrained("meta-llama/Llama-2-7b-hf", use_auth_token=id_token)
         #self.model = torch.nn.Sequential(*list(self.model.children())[:3])  # Slice the model after the 3rd layer
-        model.layers = torch.nn.ModuleList(list(model.layers)[:3])
+        self.model.layers = torch.nn.ModuleList(list(self.model.layers)[:3])
         #self.fc = torch.nn.Linear(self.model.config.hidden_size, 4096)
 
     def forward(self, input_ids, attention_mask=None, token_type_ids=None):
