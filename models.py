@@ -4,13 +4,13 @@ Define custom models here
 """
 
 import torch
-from transformers import AutoModel, AutoTokenizer, Trainer, TrainingArguments
+from transformers import AutoModel, AutoModelForCausalLM, AutoTokenizer, Trainer, TrainingArguments
 
 class truncatedLlama2(torch.nn.Module):
     '''Takes the first 3 layers of Llama2'''
     def __init__(self, id_token):
         super(truncatedLlama2, self).__init__()
-        self.model = AutoModel.from_pretrained("meta-llama/Llama-2-7b-hf", use_auth_token=id_token, output_hidden_states=True)
+        self.model = AutoModelForCausalLM.from_pretrained("meta-llama/Llama-2-7b-hf", use_auth_token=id_token, output_hidden_states=True)
         self.tokenizer = AutoTokenizer.from_pretrained("meta-llama/Llama-2-7b-hf", use_auth_token=id_token)
         # Truncate to first 3 layers
         self.model.config.num_hidden_layers = 3
