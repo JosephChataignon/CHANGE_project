@@ -3,7 +3,7 @@
 Define custom models here
 """
 
-import torch.nn as nn
+import torch
 from transformers import AutoModel, AutoTokenizer, Trainer, TrainingArguments
 
 class truncatedLlama2(nn.Module):
