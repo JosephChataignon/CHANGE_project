@@ -14,7 +14,7 @@ class truncatedLlama2(torch.nn.Module):
         self.tokenizer = AutoTokenizer.from_pretrained("meta-llama/Llama-2-7b-hf", use_auth_token=id_token)
         # Truncate to first 3 layers
         self.model.config.num_hidden_layers = 3
-        self.model.layers = torch.nn.ModuleList(list(self.model.layers)[:3])
+        self.model.model.layers = torch.nn.ModuleList(list(self.model.model.layers)[:3])
 
     def __getattr__(self, name):
         """Delegate attribute access to the underlying model."""
