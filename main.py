@@ -25,7 +25,6 @@ from tqdm import tqdm
 from dotenv import load_dotenv, dotenv_values
 
 from datasets import load_dataset
-from datasets import load_metric
 
 # in interactive sessions, uncomment this line:
 #sys.path.insert(0, r'/path/to/code/folder')
