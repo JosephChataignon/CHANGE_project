@@ -4,9 +4,9 @@
 #SBATCH -o /storage/homefs/jc23c442/logs/slurm_jobid-%j.log # output reports directory
 #SBATCH --partition=gpu
 #SBATCH --qos=job_gpu
-#SBATCH --gres=gpu:teslap100:4
-#SBATCH --cpus-per-task=3
-#SBATCH --mem-per-cpu=32G
+#SBATCH --gres=gpu:teslap100:2
+#SBATCH --cpus-per-task=2
+#SBATCH --mem-per-cpu=8G
 #SBATCH --time=12:00:00
 
 echo "date: $(date)"
