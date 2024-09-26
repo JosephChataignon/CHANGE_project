@@ -61,11 +61,11 @@ logging.info("Setup finished, starting script\n\n")
 data_set = 'walser'
 
 ## Chose model
-# model_name = "openai-gpt"
-model_name = "Custom-model-truncLlama"
+model_name = "EleutherAI/pythia-70m" #"openai-gpt"
+# model_name = "Custom-model-truncLlama"
 
-# tokenizer_name = model_name # Usual case
-tokenizer_name = "meta-llama/Llama-2-7b-hf"
+tokenizer_name = model_name # Usual case
+#tokenizer_name = "meta-llama/Llama-2-7b-hf"
 
 
 # load and fix tokenizer
