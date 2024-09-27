@@ -61,11 +61,11 @@ logging.info("Setup finished, starting script\n\n")
 data_set = 'walser'
 
 ## Chose model
-model_name = "EleutherAI/pythia-70m" #"openai-gpt"
-# model_name = "Custom-model-truncLlama"
+#model_name = "EleutherAI/pythia-70m" #"openai-gpt"
+model_name = "Custom-model-truncLlama"
 
-tokenizer_name = model_name # Usual case
-#tokenizer_name = "meta-llama/Llama-2-7b-hf"
+#tokenizer_name = model_name # Usual case
+tokenizer_name = "meta-llama/Llama-2-7b-hf"
 
 
 # load and fix tokenizer
@@ -113,8 +113,8 @@ quantization_config = GPTQConfig(
 # model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=quantization_config)
 
 ## Simple loading
-model = AutoModelForCausalLM.from_pretrained(model_name)
-#model = truncatedLlama2(id_token=hf_token)
+#model = AutoModelForCausalLM.from_pretrained(model_name)
+model = truncatedLlama2(id_token=hf_token)
 model.to(device)
 
 
