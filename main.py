@@ -72,9 +72,9 @@ tokenizer_name = model_name # Usual case
 tokenizer = AutoTokenizer.from_pretrained(tokenizer_name,use_auth_token=hf_token)
 
 if tokenizer.pad_token is None:
-    tokenizer.pad_token = tokenizer.eos_token
-    #tokenizer.add_special_tokens({'pad_token': '[PAD]'})
-    #model.resize_token_embeddings(len(tokenizer))
+    #tokenizer.pad_token = tokenizer.eos_token
+    tokenizer.add_special_tokens({'pad_token': '[PAD]'})
+    model.resize_token_embeddings(len(tokenizer))
 
 
 ## Training configuration
