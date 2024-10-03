@@ -61,7 +61,7 @@ logging.info("Setup finished, starting script\n\n")
 data_set = 'Max-Planck-test'
 
 ## Chose model
-model_name = "EleutherAI/pythia-410m" #"openai-gpt"
+model_name = "openai-gpt"#"EleutherAI/pythia-410m" 
 #model_name = "Custom-model-truncLlama"
 
 tokenizer_name = model_name # Usual case
