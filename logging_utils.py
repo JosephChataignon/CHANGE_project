@@ -110,7 +110,12 @@ class CustomTensorBoardCallback(TensorBoardCallback):
         self.tb_writer.add_text("args", repr(args))
         self.tb_writer.add_graph(state.model)
 
-
+    def on_evaluate_end(self, args, state, control, metrics, **kwargs):
+        """
+        Event called at the end of an evaluation.
+        """
+        for key, value in metrics.items():
+            self.tb_writer.add_scalar(f'eval/{key}', value, state.global_step)
 
 
 
