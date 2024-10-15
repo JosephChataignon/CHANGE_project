@@ -58,7 +58,7 @@ logging.info("Setup finished, starting script\n\n")
 ## Set parameters
 
 # get data files ("Walser" or "Max-Planck" or "Max-Planck-test")
-data_set = 'Max-Planck'
+data_set = 'Max-planck-test'
 
 ## Chose model
 model_name = "openai-gpt"#"EleutherAI/pythia-410m" 
