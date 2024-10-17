@@ -108,8 +108,11 @@ class CustomTensorBoardCallback(TensorBoardCallback):
 
             self.tb_writer = SummaryWriter(log_dir=self.tb_dir)
         self.tb_writer.add_text("args", repr(args))
-        logging.warning(f"state variable: {state}")
-        self.tb_writer.add_graph(state.model)
+        #logging.warning(f"state variable: {state}")
+        #self.tb_writer.add_graph(state.model)
+        #self.model might work
+        #model = self.trainer.model
+        self.tb_writer.add_graph(self.model, self.model.dummy_input)
 
     def on_evaluate_end(self, args, state, control, metrics, **kwargs):
         """
