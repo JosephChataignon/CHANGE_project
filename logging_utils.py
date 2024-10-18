@@ -5,6 +5,7 @@ and in logging some informations
 """
 
 import os, sys, logging, traceback
+from pip._internal.operations import freeze
 import torch, transformers
 from datetime import datetime
 from transformers.integrations import TensorBoardCallback
@@ -59,6 +60,7 @@ def log_system_info():
     logging.debug('System info')
     logging.debug(f"\tOS detected: {sys.platform}")
     logging.debug(f"\tPython version: {sys.version}")
+    logging.debug(f"\tPython packages: {'\n\t'.join(freeze.freeze())}")
     logging.debug(f"\tCUDA drivers version: {torch.version.cuda}")
 
 
