@@ -93,6 +93,23 @@ def print_trainable_parameters(model):
     )
 
 
+
+def inference_test(prompt, model, tokenizer, device):
+    '''Run simple inference with the model'''
+    inputs = tokenizer(prompt, return_tensors="pt")
+    logging.debug(f"Inference: inputs are in CUDA: {inputs['input_ids'].is_cuda}")
+    inputs = {k: v.to(device) for k, v in inputs.items()}  # Move input tensors to GPU
+    logging.debug(f"Inference: inputs are in CUDA now: {inputs['input_ids'].is_cuda}") # inputs[0].is_cuda if bugs ?
+    logging.debug(f"Inference: model is in CUDA: {all(p.is_cuda for p in model.parameters())}")
+    outputs = model.generate(
+        **inputs, max_new_tokens=100
+    )  # default generation config (+ 100 tokens)
+    result = tokenizer.batch_decode(outputs, skip_special_tokens=True)[0]
+    return result
+
+
+
+
 def get_tb_callback(config,run_name):
     return CustomTensorBoardCallback(tb_dir=config['LOGS_FOLDER']+'/TensorBoard/'+run_name)
 

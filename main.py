@@ -3,7 +3,7 @@
 Launcher file
 """
 
-## Imports
+################################ Imports ################################
 import torch
 import torch.nn.functional as F
 import torch.backends.cuda as cuda
@@ -11,11 +11,9 @@ from torch.utils.data import DataLoader, IterableDataset, Dataset
 from sklearn.model_selection import train_test_split
 
 import transformers
-from transformers import pipeline, AutoTokenizer, AutoModelForCausalLM, TrainingArguments, GPTQConfig
+from transformers import pipeline, AutoTokenizer, AutoModelForCausalLM, TrainingArguments
 from transformers import Trainer, LineByLineTextDataset, TextDataset, DataCollatorForLanguageModeling
-from transformers import BitsAndBytesConfig
 from accelerate import Accelerator
-from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
 from trl import SFTTrainer, DataCollatorForCompletionOnlyLM
 
 import os, sys, copy, logging
@@ -28,10 +26,11 @@ from datasets import load_dataset
 
 # in interactive sessions, uncomment this line:
 #sys.path.insert(0, r'/path/to/code/folder')
-from logging_utils import setup_logging, display_CUDA_info, print_trainable_parameters, get_tb_callback
+from logging_utils import setup_logging, display_CUDA_info, print_trainable_parameters, get_tb_callback, inference_test
 from data import get_CHANGE_data
-from models import truncatedLlama2
+from models import load_model
 
+################################### SETUP ######################################
 ## Load environment variables
 env_file = '.env' # for interactive sessions change to the correct path
 config  = dotenv_values(env_file)
@@ -40,6 +39,7 @@ for env_var in ['LOGS_FOLDER','SAVED_MODELS_DIR', 'HUGGINGFACE_TOKEN_FILE']:
 # extract Huggingface token
 with open(config['HUGGINGFACE_TOKEN_FILE'], 'r') as file:
     hf_token = file.read().strip()
+    config['HF_TOKEN'] = hf_token
 
 ## Setup logging
 start_time = datetime.now()
@@ -55,83 +55,29 @@ logging.info("Setup finished, starting script\n\n")
 
 
 
-## Set parameters
+############################### LOADING MODEL, TOKENIZER AND DATA ###############################
 
 # get data files ("Walser" or "Max-Planck" or "Max-Planck-test")
 data_set = 'Max-planck-test'
 
-## Chose model
-model_name = "openai-gpt"#"EleutherAI/pythia-410m" 
-#model_name = "Custom-model-truncLlama"
+# Chose model (examples: "openai-gpt", "EleutherAI/pythia-410m", "truncatedLlama2")
+model_name = "openai-gpt"
 
-tokenizer_name = model_name # Usual case
-#tokenizer_name = "meta-llama/Llama-2-7b-hf"
-
-
-# load and fix tokenizer
-tokenizer = AutoTokenizer.from_pretrained(tokenizer_name,use_auth_token=hf_token)
-
-
-## Training configuration
-
-# Bitsandbytes quantization
-bnb_config = BitsAndBytesConfig(
-    load_in_4bit=True,
-    bnb_4bit_quant_type="nf4",
-    bnb_4bit_compute_dtype=torch.bfloat16
-)
-# Load base model
-# model = AutoModelForCausalLM.from_pretrained(
-#     model_name,
-#     #quantization_config=bnb_config,
-#     device_map="auto",
-#     use_cache = False,
-#     trust_remote_code=True,
-# )
-# LoRA
-qlora_config = LoraConfig(
-    r=16,
-    lora_alpha=32,
-    lora_dropout=0.05,
-    bias="none",
-    target_modules=["query_key_value", "dense", "dense_h_to_4h", "dense_4h_to_h"],
-    task_type="CAUSAL_LM"
-)
-# GPTQ
-quantization_config = GPTQConfig(
-    bits=4,
-    dataset = "c4", # default is "c4" for calibration dataset
-    tokenizer=tokenizer
-)
-
-## For quantization with GPTQ (no training afterward, inference only)
-# model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=quantization_config)
-
-## Simple loading
-model = AutoModelForCausalLM.from_pretrained(model_name)
-#model = truncatedLlama2(id_token=hf_token)
+model, tokenizer = load_model(model_name, config)
 model.to(device)
-
-
-if tokenizer.pad_token is None:
-    #tokenizer.pad_token = tokenizer.eos_token
-    tokenizer.add_special_tokens({'pad_token': '[PAD]'})
-    model.resize_token_embeddings(len(tokenizer))
 
 
 # set name where the trained model will be saved
 instance_name = f"{model_name.replace('/','-')}_finetuned-on_{data_set}_{start_time}"
 logging.info(f'Model loaded: {model_name}')
 logging.info(model)
-display_CUDA_info(device)
 logging.info(f'Output (fine-tuned) model will be saved with the name: {instance_name}')
-tensorboard_callback = get_tb_callback(config,instance_name)
+display_CUDA_info(device)
 
 
 ## Load and tokenize dataset
 logging.info(f'Loading data set: {data_set}')
 dataset = get_CHANGE_data(data_set)
-
 
 def tokenize_function(examples):
     return tokenizer(examples["text"], padding="max_length", truncation=True)
@@ -143,30 +89,20 @@ tokenized_datasets = tokenized_datasets.map(lambda batch: {k: v.to(device).long(
 display_CUDA_info(device)
 
 
-
-
-
-
-
 # Check that the model outputs something before fine-tuning
-def inference_test(prompt,model,tokenizer,device):
-    inputs = tokenizer(prompt, return_tensors="pt")
-    logging.debug(f"Inference: inputs are in CUDA: {inputs['input_ids'].is_cuda}")
-    inputs = {k: v.to(device) for k, v in inputs.items()}  # Move input tensors to GPU
-    logging.debug(f"Inference: inputs are in CUDA now: {inputs['input_ids'].is_cuda}") # inputs[0].is_cuda if bugs ?
-    logging.debug(f"Inference: model is in CUDA: {all(p.is_cuda for p in model.parameters())}")
-    outputs = model.generate(
-        **inputs, max_new_tokens=100
-    )  # default generation config (+ 100 tokens)
-    result = tokenizer.batch_decode(outputs, skip_special_tokens=True)[0]
-    return result
-
 result = inference_test('Once upon a time, there was a',model,tokenizer,device)
 logging.info("Testing that inference works:\n" + result)
 
 
-## for Accelerate use
+
+
+
+################################# TRAINING ########################################
+
+# for Accelerate use
 accelerator = Accelerator()
+# for TensorBoard logging
+tensorboard_callback = get_tb_callback(config,instance_name)
 
 # Define training arguments
 training_args = TrainingArguments(
@@ -245,6 +181,8 @@ model.save_pretrained(f"{config['SAVED_MODELS_DIR']}/{instance_name}")
 tokenizer.save_pretrained(f"{config['SAVED_MODELS_DIR']}/{instance_name}") #i did not change the tokenizer ?
 logging.info(f"model saved at {config['SAVED_MODELS_DIR']}/{instance_name}")
 
-# load for inference
+
+
+# In order to re-load the models for inference
 #tokenizer = AutoTokenizer.from_pretrained(config['SAVED_MODELS_DIR'] + "fine_tuned_pythia-70m-Walser")
 #model = AutoModelForCausalLM.from_pretrained(config['SAVED_MODELS_DIR'] + "fine_tuned_pythia-70m-Walser")
