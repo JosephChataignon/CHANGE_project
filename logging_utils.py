@@ -60,7 +60,8 @@ def log_system_info():
     logging.debug('System info')
     logging.debug(f"\tOS detected: {sys.platform}")
     logging.debug(f"\tPython version: {sys.version}")
-    logging.debug(f"\tPython packages: {'\n\t'.join(freeze.freeze())}")
+    pkgs = '\n\t'.join(freeze.freeze())
+    logging.debug(f"\tPython packages: {pkgs}")
     logging.debug(f"\tCUDA drivers version: {torch.version.cuda}")
 
 
