@@ -24,11 +24,6 @@ def load_model(model_name, config, tokenizer_name=None):
     
     # load and fix tokenizer
     tokenizer = AutoTokenizer.from_pretrained(tokenizer_name,use_auth_token=config['HF_TOKEN'])
-    #fix tokenizer empty pad token
-    if tokenizer.pad_token is None:
-        #tokenizer.pad_token = tokenizer.eos_token
-        tokenizer.add_special_tokens({'pad_token': '[PAD]'})
-        model.resize_token_embeddings(len(tokenizer))
 
 
 
@@ -72,6 +67,12 @@ def load_model(model_name, config, tokenizer_name=None):
         model = truncatedLlama2(id_token=config['HF_TOKEN'])
     else:
         model = AutoModelForCausalLM.from_pretrained(model_name)
+    
+    #fix tokenizer empty pad token
+    if tokenizer.pad_token is None:
+        #tokenizer.pad_token = tokenizer.eos_token
+        tokenizer.add_special_tokens({'pad_token': '[PAD]'})
+        model.resize_token_embeddings(len(tokenizer))
     
     return model, tokenizer
 
