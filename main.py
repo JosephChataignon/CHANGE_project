@@ -61,7 +61,7 @@ logging.info("Setup finished, starting script\n\n")
 data_set = 'Walser'
 
 # Chose model (examples: "openai-gpt", "EleutherAI/pythia-410m", "truncatedLlama2")
-model_name = "truncatedLlama2"
+model_name = "meta-llama/Llama-2-7b-hf"
 
 model, tokenizer = load_model(model_name, config)
 model.to(device)
