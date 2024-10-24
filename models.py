@@ -16,6 +16,8 @@ def load_model(model_name, config, tokenizer_name=None):
     # chose tokenizer
     if model_name.lower() == 'truncatedllama2':
         tokenizer_name = "meta-llama/Llama-2-7b-hf"
+    if model_name.lower() == 'truncatedPythia':
+        tokenizer_name = "EleutherAI/pythia-70m"
     else:
         tokenizer_name = model_name
 
@@ -65,6 +67,8 @@ def load_model(model_name, config, tokenizer_name=None):
     ## Simple loading
     if model_name.lower() == 'truncatedllama2':
         model = truncatedLlama2(id_token=config['HF_TOKEN'])
+    if model_name.lower() == 'truncatedllama2':
+        model = truncatedPythia(id_token=config['HF_TOKEN'])
     else:
         model = AutoModelForCausalLM.from_pretrained(model_name)
     
@@ -95,6 +99,27 @@ class truncatedLlama2(torch.nn.Module):
             return super().__getattr__(name)
         except AttributeError:
             return getattr(self.model, name)
+
+
+
+
+class truncatedPythia(torch.nn.Module):
+    '''Takes the first 2 layers of Pythia'''
+    def __init__(self, id_token):
+        super(truncatedPythia, self).__init__()
+        self.model = AutoModelForCausalLM.from_pretrained("EleutherAI/pythia-70m", use_auth_token=id_token, output_hidden_states=True)
+        self.tokenizer = AutoTokenizer.from_pretrained("EleutherAI/pythia-70m", use_auth_token=id_token)
+        # Truncate to first 2 layers
+        self.model.config.num_hidden_layers = 2
+        self.model.gpt_neox.layers = torch.nn.ModuleList(list(self.model.gpt_neox.layers)[:2])
+
+    def __getattr__(self, name):
+        """Delegate attribute access to the underlying model."""
+        try:
+            return super().__getattr__(name)
+        except AttributeError:
+            return getattr(self.model, name)
+
 
 
 
