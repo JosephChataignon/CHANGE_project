@@ -61,7 +61,7 @@ logging.info("Setup finished, starting script\n\n")
 data_set = 'Walser'
 
 # Chose model (examples: "openai-gpt", "EleutherAI/pythia-410m", "truncatedLlama2")
-model_name = "meta-llama/Llama-2-7b-hf"
+model_name = "truncatedPythia"
 
 model, tokenizer = load_model(model_name, config)
 model.to(device)
@@ -184,5 +184,5 @@ logging.info(f"model saved at {config['SAVED_MODELS_DIR']}/{instance_name}")
 
 
 # In order to re-load the models for inference
-#tokenizer = AutoTokenizer.from_pretrained(config['SAVED_MODELS_DIR'] + "fine_tuned_pythia-70m-Walser")
-#model = AutoModelForCausalLM.from_pretrained(config['SAVED_MODELS_DIR'] + "fine_tuned_pythia-70m-Walser")
+#tokenizer = AutoTokenizer.from_pretrained(config['SAVED_MODELS_DIR'] + "/" + "fine_tuned_pythia-70m-Walser")
+#model = AutoModelForCausalLM.from_pretrained(config['SAVED_MODELS_DIR'] + "/" + "fine_tuned_pythia-70m-Walser")

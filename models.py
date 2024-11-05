@@ -67,7 +67,7 @@ def load_model(model_name, config, tokenizer_name=None):
     ## Simple loading
     if model_name.lower() == 'truncatedllama2':
         model = truncatedLlama2(id_token=config['HF_TOKEN'])
-    if model_name.lower() == 'truncatedllama2':
+    if model_name.lower() == 'truncatedpythia':
         model = truncatedPythia(id_token=config['HF_TOKEN'])
     else:
         model = AutoModelForCausalLM.from_pretrained(model_name)
