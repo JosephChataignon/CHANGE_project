@@ -16,7 +16,7 @@ def load_model(model_name, config, tokenizer_name=None):
     # chose tokenizer
     if model_name.lower() == 'truncatedllama2':
         tokenizer_name = "meta-llama/Llama-2-7b-hf"
-    if model_name.lower() == 'truncatedPythia':
+    if model_name.lower() == 'truncatedpythia':
         tokenizer_name = "EleutherAI/pythia-70m"
     else:
         tokenizer_name = model_name
