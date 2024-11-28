@@ -77,6 +77,16 @@ def get_CHANGE_data(data_type):
         dataset = dataset.map(substitute_chars)
         return dataset
         
+    elif data_type.lower() == 'education':
+        #data is located in research storage /Projekt_Change_LLM/Eduscience_data
+        
+        # make test/train split
+        
+        # chunk here?
+        
+        # load and return ?
+        
+        return
 
 
 
