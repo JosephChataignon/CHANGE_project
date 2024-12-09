@@ -78,15 +78,17 @@ def get_CHANGE_data(data_type):
         return dataset
         
     elif data_type.lower() == 'education':
-        #data is located in research storage /Projekt_Change_LLM/Eduscience_data
-        
-        # make test/train split
+        # find paths of all files
+        data_dir = '/research_storage/Projekt_Change_LLM/Eduscience_data'
+        # make test/train split - do we actually need it ?
+        train_files,test_files = '',''
+        # clean the text ? manage footnotes ?
         
         # chunk here?
         
         # load and return ?
-        
-        return
+        return load_dataset("text", data_files={"train":train_files, "test":test_files})
+
 
 
 
