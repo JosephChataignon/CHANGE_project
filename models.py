@@ -45,22 +45,13 @@ def load_model(model_name, config, tokenizer_name=None):
     #     use_cache = False,
     #     trust_remote_code=True,
     # )
-    # LoRA
-    qlora_config = LoraConfig(
-        r=16,
-        lora_alpha=32,
-        lora_dropout=0.05,
-        bias="none",
-        target_modules=["query_key_value", "dense", "dense_h_to_4h", "dense_4h_to_h"],
-        task_type="CAUSAL_LM"
-    )
+    
     # GPTQ
     quantization_config = GPTQConfig(
         bits=4,
         dataset = "c4", # default is "c4" for calibration dataset
         tokenizer=tokenizer
     )
-
     ## For quantization with GPTQ (no training afterward, inference only)
     # model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=quantization_config)
 

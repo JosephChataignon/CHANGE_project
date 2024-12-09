@@ -21,6 +21,7 @@ import os, sys, copy, logging
 from datetime import datetime, timedelta
 from tqdm import tqdm
 from dotenv import load_dotenv, dotenv_values
+from peft import LoraConfig
 
 from datasets import load_dataset
 
@@ -58,17 +59,17 @@ logging.info("Setup finished, starting script\n\n")
 ############################### LOADING MODEL, TOKENIZER AND DATA ###############################
 
 # get data files ("Walser" or "Max-Planck" or "Max-Planck-test")
-data_set = 'Walser'
+data_set = 'Max-Planck'
 
 # Chose model (examples: "openai-gpt", "EleutherAI/pythia-410m", "truncatedLlama2")
-model_name = "truncatedPythia"
+model_name = "EleutherAI/pythia-6.9b"
 
 model, tokenizer = load_model(model_name, config)
 model.to(device)
 
 
 # set name where the trained model will be saved
-instance_name = f"{model_name.replace('/','-')}_finetuned-on_{data_set}_{start_time}"
+instance_name = f"{model_name.replace('/','-')}_finetuned-on_{data_set}_LoRA_{start_time}"
 logging.info(f'Model loaded: {model_name}')
 logging.info(model)
 logging.info(f'Output (fine-tuned) model will be saved with the name: {instance_name}')
@@ -122,27 +123,37 @@ training_args = TrainingArguments(
     run_name=instance_name,
 )
 
-trainer = Trainer(
-    model=model,
-    args=training_args,
-    train_dataset=tokenized_datasets['train'],
-    eval_dataset=tokenized_datasets['test'],
-    data_collator=DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=False),
-    tokenizer=tokenizer,
-    callbacks=[tensorboard_callback],
-)
-
-## for QLoRA training
-# trainer = SFTTrainer(
-#     model,
+# trainer = Trainer(
+#     model=model,
 #     args=training_args,
 #     train_dataset=tokenized_datasets['train'],
 #     eval_dataset=tokenized_datasets['test'],
+#     data_collator=DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=False),
 #     tokenizer=tokenizer,
-#     peft_config=qlora_config,
-#     dataset_text_field="text",
-#     max_seq_length=2048,
+#     callbacks=[tensorboard_callback],
 # )
+
+## for QLoRA training
+# LoRA
+qlora_config = LoraConfig(
+    r=16,
+    lora_alpha=32,
+    lora_dropout=0.05,
+    bias="none",
+    target_modules=["query_key_value", "dense", "dense_h_to_4h", "dense_4h_to_h"],
+    task_type="CAUSAL_LM"
+)
+trainer = SFTTrainer(
+    model,
+    args=training_args,
+    train_dataset=tokenized_datasets['train'],
+    eval_dataset=tokenized_datasets['test'],
+    tokenizer=tokenizer,
+    peft_config=qlora_config,
+    dataset_text_field="text",
+    max_seq_length=2048,
+    callbacks=[tensorboard_callback],
+)
 
 ## for Accelerate use
 trainer = accelerator.prepare(trainer)
