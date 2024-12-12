@@ -59,7 +59,7 @@ logging.info("Setup finished, starting script\n\n")
 ############################### LOADING MODEL, TOKENIZER AND DATA ###############################
 
 # get data files ("Walser" or "Max-Planck" or "Max-Planck-test")
-data_set = 'Max-Planck-test'
+data_set = 'walser'
 
 # Chose model (examples: "openai-gpt", "EleutherAI/pythia-410m", "truncatedLlama2")
 model_name = "EleutherAI/pythia-70m"
