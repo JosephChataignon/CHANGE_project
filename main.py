@@ -62,7 +62,7 @@ logging.info("Setup finished, starting script\n\n")
 data_set = 'Max-Planck-test'
 
 # Chose model (examples: "openai-gpt", "EleutherAI/pythia-410m", "truncatedLlama2")
-model_name = "openai-gpt"
+model_name = "EleutherAI/pythia-70m"
 
 model, tokenizer = load_model(model_name, config)
 model.to(device)
