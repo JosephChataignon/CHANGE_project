@@ -31,46 +31,24 @@ def clean_text_with_ollama(text: str, model: str = "llama2") -> str:
     else:
         raise Exception(f"Ollama API error: {response.status_code}")
 
-def chunk_text(text: str, chunk_size: int = 1000, overlap: int = 100) -> List[str]:
-    chunks = []
-    start = 0
-    text_length = len(text)
-
-    while start < text_length:
-        end = min(start + chunk_size, text_length)
-        chunk = text[start:end]
-        chunks.append(chunk)
-        start += (chunk_size - overlap)
-
-    return chunks
-
 def process_text_files(input_folder: str, output_folder: str) -> None:
     assert os.path.exists(output_folder), f"Output folder {output_folder} does not exist."
-        
+
     txt_files = find_txt_files(input_folder)
-    
+
     for file_path in txt_files:
         with open(file_path, 'r', encoding='utf-8') as f:
             text = f.read()
 
-        #text = clean_text_with_ollama(text) # Uncomment this line to use the Ollama API for text cleaning
-        text_chunks = chunk_text(text)
-        
-        # Create output filename based on input filename
+        cleaned_text = clean_text_with_ollama(text)
         base_name = os.path.splitext(os.path.basename(file_path))[0]
-        
-        # Write each chunk to a separate file
-        for i, chunk in enumerate(text_chunks):
-            chunk_filename = f"{base_name}_chunk_{i}.txt"
-            chunk_path = os.path.join(output_folder, chunk_filename)
-            
-            with open(chunk_path, 'w', encoding='utf-8') as f:
-                f.write(chunk)
+        output_filename = f"{base_name}_cleaned.txt"
+        output_path = os.path.join(output_folder, output_filename)
 
-
+        with open(output_path, 'w', encoding='utf-8') as f:
+            f.write(cleaned_text)
 
 if __name__ == "__main__":
     input_folder = config['RAW_DATA_FOLDER']
-    output_folder = config['PROCESSED_DATA_FOLDER']
+    output_folder = config['PREPROCESSED_DATA_FOLDER']
     process_text_files(input_folder, output_folder)
-
