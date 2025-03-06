@@ -5,11 +5,23 @@ Helper file to hide the mess of getting data from various sources
 import os
 import logging
 import unicodedata
-from datasets import load_dataset
+from datasets import load_dataset, Dataset
 from collections import defaultdict
 
 
-
+def get_file_paths(root_dir: str, file_extensions: list[str]) -> list[str]:
+    """
+    Retrieves a list of paths to all files with specified extensions in the given 
+    root directory and its subdirectories.
+    """
+    file_paths = []
+    
+    for dirpath, _, filenames in os.walk(root_dir):
+        for filename in filenames:
+            if any(filename.endswith(f".{ext}") for ext in file_extensions):
+                file_paths.append(os.path.join(dirpath, filename))
+    
+    return file_paths
 
 
 def get_CHANGE_data(data_type):
@@ -89,6 +101,16 @@ def get_CHANGE_data(data_type):
         # load and return ?
         return load_dataset("text", data_files={"train":train_files, "test":test_files})
 
+    elif data_type.lower() == 'education_sample':
+        # find paths of all files
+        data_dir = '/research_storage/Projekt_Change_LLM/Preprocessed_Eduscience_data/sample/'
+        data_files = get_file_paths(data_dir)
+        texts = []
+        for file_path in data_files:
+            with open(file_path, 'r', encoding='utf-8') as f:
+                text = f.read()
+                texts.append({"text": text, "file_name": os.path.basename(file_path)})
+        return Dataset.from_list(texts)
 
 
 

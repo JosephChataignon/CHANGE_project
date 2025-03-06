@@ -1,5 +1,4 @@
-import os
-import requests
+import os, sys, requests
 from typing import List
 from dotenv import dotenv_values
 
@@ -49,6 +48,19 @@ def process_text_files(input_folder: str, output_folder: str) -> None:
             f.write(cleaned_text)
 
 if __name__ == "__main__":
-    input_folder = config['RAW_DATA_FOLDER']
-    output_folder = config['PREPROCESSED_DATA_FOLDER']
-    process_text_files(input_folder, output_folder)
+    var = sys.argv[1]
+    if var == "clean":
+        # clean the data
+        process_text_files(config['RAW_DATA_FOLDER'], config['PREPROCESSED_DATA_FOLDER'])
+    elif var == "eval":
+        # evaluate cleaning process
+        # here we're going to compare the cleaned data to the original data, 
+        # based on the sample folder.
+        # TODO: 
+        # - add sample folder path
+        # - write the evaluation function
+        # - change process_text_files to allow evaluate without writing 
+        #   processed files but writing the eval result
+        # - call process_text_files in eval mode
+        pass
+        
