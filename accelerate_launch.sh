@@ -79,7 +79,9 @@ echo "https://github.com/JosephChataignon/CHANGE_project/commit/$(git rev-parse 
 echo " === "
 echo "Executing Python script: $fullscriptpath , in Apptainer container: ubuntu_env.sif"
 apptainer exec --nv \
-    --bind "$STORAGE_DIR":/research_storage \
     $SOFTWARE_BIND \
     ~/ubuntu_env.sif \
     accelerate launch --config_file "$CHANGE_PROJ_DIR/$ACCELERATE_CONFIG" "$fullscriptpath"
+
+# removed because parameter in .env now
+#    --bind "$STORAGE_DIR":/research_storage \
