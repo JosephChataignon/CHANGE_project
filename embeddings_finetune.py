@@ -100,6 +100,8 @@ sentence_dataset = dataset.map(
     batched=True, 
     remove_columns=dataset.column_names
 )
+logging.info(f"Dataset documents are chunked, now we have {len(sentence_dataset)} sentences.")
+
 # Create training pairs for contrastive learning
 def create_pairs(dataset, batch_size=1000):
     sentences = dataset["sentence"]

@@ -25,6 +25,7 @@ def get_file_paths(root_dir: str, file_extensions: list[str]) -> list[str]:
 
 
 def get_CHANGE_data(data_type, data_storage):
+    assert isinstance(data_storage, str) and len(data_storage) > 0, f"data_storage should be a non-empty string, got '{data_storage}'"
 
     if data_type.lower() == "walser":
         if os.getenv("COLAB_RELEASE_TAG"):
