@@ -18,6 +18,9 @@ def get_file_paths(root_dir: str, file_extensions: list[str]) -> list[str]:
     
     for dirpath, _, filenames in os.walk(root_dir):
         for filename in filenames:
+            logging.info(f'examined filename: {filename}')
+            for ext in file_extensions):
+                logging.info(f'\tends with {ext} : {filename.endswith(f".{ext}")}')
             if any(filename.endswith(f".{ext}") for ext in file_extensions):
                 file_paths.append(os.path.join(dirpath, filename))
     
