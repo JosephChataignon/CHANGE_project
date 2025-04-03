@@ -38,7 +38,7 @@ from models import load_model
 ## Load environment variables
 env_file = '.env' # for interactive sessions change to the correct path
 config  = dotenv_values(env_file)
-for env_var in ['LOGS_FOLDER','SAVED_MODELS_DIR', 'HUGGINGFACE_TOKEN_FILE']:
+for env_var in ['LOGS_FOLDER','SAVED_MODELS_DIR', 'HUGGINGFACE_TOKEN_FILE', 'DATA_STORAGE']:
     assert env_var in config, f'Could not find variable {env_var} in .env file: {env_file}'
 # extract Huggingface token
 with open(config['HUGGINGFACE_TOKEN_FILE'], 'r') as file:
@@ -81,7 +81,7 @@ display_CUDA_info(device)
 
 ## Load dataset
 logging.info(f'Loading data set: {data_set}')
-dataset = get_CHANGE_data(data_set)
+dataset = get_CHANGE_data(data_set, config['DATA_STORAGE'])
 
 def segment_documents(examples):
     all_sentences = []

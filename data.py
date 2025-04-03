@@ -24,7 +24,7 @@ def get_file_paths(root_dir: str, file_extensions: list[str]) -> list[str]:
     return file_paths
 
 
-def get_CHANGE_data(data_type):
+def get_CHANGE_data(data_type, data_storage):
 
     if data_type.lower() == "walser":
         if os.getenv("COLAB_RELEASE_TAG"):
@@ -35,13 +35,13 @@ def get_CHANGE_data(data_type):
             data_dir = "/content/drive/MyDrive/Unibe/"
         else:
             # from Ubelix container
-            data_dir = '/research_storage/Projekt_Change_LLM/Walser_data/'
+            data_dir = os.path.join(data_storage,'Projekt_Change_LLM/Walser_data/')
         train_file = data_dir + "train_dataset.txt"
         test_file  = data_dir + "test_dataset.txt"
         return load_dataset("text", data_files={"train":train_file, "test":test_file})
     
     elif "maxplanck" in data_type.lower().replace('-',''):
-        data_dir = '/research_storage/Data_MaxPlanckInstitut/'
+        data_dir = os.path.join(data_storage,'Data_MaxPlanckInstitut/')
         substitutions_file = data_dir + 'scripts/CHANGE_processing/unique_characters-replace.txt'
         # We will need to substitute some problematic characters with new ones
         character_pairs = load_substitutions(substitutions_file)
@@ -91,7 +91,7 @@ def get_CHANGE_data(data_type):
         
     elif data_type.lower() == 'education':
         # find paths of all files
-        data_dir = '/research_storage/Projekt_Change_LLM/Eduscience_data'
+        data_dir = os.path.join(data_storage, 'Projekt_Change_LLM/Eduscience_data')
         # make test/train split - do we actually need it ?
         train_files,test_files = '',''
         # clean the text ? manage footnotes ?
@@ -103,8 +103,8 @@ def get_CHANGE_data(data_type):
 
     elif data_type.lower() == 'education_sample':
         # find paths of all files
-        data_dir = '/research_storage/Projekt_Change_LLM/Preprocessed_Eduscience_data/sample/'
-        data_files = get_file_paths(data_dir)
+        data_dir = os.path.join(data_storage, 'Projekt_Change_LLM/Preprocessed_Eduscience_data/sample/')
+        data_files = get_file_paths(data_dir,['txt'])
         texts = []
         for file_path in data_files:
             with open(file_path, 'r', encoding='utf-8') as f:
