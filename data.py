@@ -104,8 +104,9 @@ def get_CHANGE_data(data_type, data_storage):
 
     elif data_type.lower() == 'education_sample':
         # find paths of all files
-        data_dir = os.path.join(data_storage, 'Projekt_Change_LLM/Preprocessed_Eduscience_data/sample/')
+        data_dir = os.path.join(data_storage, 'Projekt_Change_LLM/Preprocessed_Eduscience_data/sample_clean')
         data_files = get_file_paths(data_dir,['txt'])
+        logging.info(f'Loading dataset education_sample, searching from root:{data_dir}, found {len(data_files)} txt files')
         texts = []
         for file_path in data_files:
             with open(file_path, 'r', encoding='utf-8') as f:
