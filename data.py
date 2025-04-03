@@ -18,14 +18,11 @@ def get_file_paths(root_dir: str, file_extensions: list[str]) -> list[str]:
     logging.info(f'get_file_paths is called with arguments: {root_dir}, {file_extensions}')
     
     # Check if directory exists
-    if not os.path.exists(root_dir):
-        logging.info(f'Directory does not exist: {root_dir}')
-    return file_paths
+    assert os.path.exists(root_dir), f"The directory {root_dir} was not found."
 
     # Add logging for each directory visit
-    for dirpath, dirs, filenames in os.walk(root_dir):
+    for dirpath, _, filenames in os.walk(root_dir):
         logging.info(f'Visiting directory: {dirpath}')
-        logging.info(f'Found directories: {dirs}')
         logging.info(f'Found files: {filenames}')
 
         for filename in filenames:
