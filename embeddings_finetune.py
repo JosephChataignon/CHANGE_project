@@ -7,7 +7,7 @@ Launcher file for the fine-tuning of embeddings models
 import torch
 import torch.nn.functional as F
 import torch.backends.cuda as cuda
-from torch.utils.data import DataLoader, IterableDataset, Dataset
+from torch.utils.data import DataLoader, IterableDataset, Dataset as TorchDataset
 from sklearn.model_selection import train_test_split
 
 import transformers
@@ -26,7 +26,7 @@ from tqdm import tqdm
 from dotenv import load_dotenv, dotenv_values
 from peft import LoraConfig
 
-from datasets import load_dataset
+from datasets import Dataset as HFDataset, load_dataset
 
 # in interactive sessions, uncomment this line:
 #sys.path.insert(0, r'/path/to/code/folder')
@@ -135,7 +135,7 @@ def create_pairs(dataset, batch_size=1000):
                         "negative": batch_sentences[neg_idx]
                     })
     
-    return Dataset.from_list(pairs)
+    return HFDataset.from_list(pairs)
 
 # Create pairs dataset
 pairs_dataset = create_pairs(sentence_dataset)
