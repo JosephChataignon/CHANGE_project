@@ -67,10 +67,16 @@ data_set = 'education_sample'
 # Chose model (examples: "Lajavaness/bilingual-embedding-large", "sentence-transformers/all-mpnet-base-v2"...)
 model_name = "sentence-transformers/all-mpnet-base-v2"
 
-model = SentenceTransformer(model_name)
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 torch.cuda.set_device(0) # work on one GPU only
-model.to(device)
+torch.distributed.is_initialized = lambda: False  # This prevents distributed init
+model = SentenceTransformer(model_name)
+# Check if there are any DataParallel wrappers and unwrap them
+if hasattr(model, 'module'):
+    model = model.module
 model.parallel_training = False
+model.to(device)
+
 
 # set name where the trained model will be saved
 instance_name = f"{model_name.replace('/','-')}_finetuned-on_{data_set}_{start_time}"
@@ -197,7 +203,7 @@ logging.info("Starting training")
 # for TensorBoard logging
 tensorboard_callback = get_tb_callback(config,instance_name)
 
-train_loss = losses.MultipleNegativesRankingLoss(model)
+train_loss = losses.MultipleNegativesRankingLoss(model).to(device)
 
 train_examples = convert_to_sentence_transformer_format(train_dataset)
 train_dataloader = DataLoader(train_examples, shuffle=True, batch_size=16)
