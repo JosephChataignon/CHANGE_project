@@ -195,7 +195,7 @@ def convert_to_sentence_transformer_format(dataset):
 logging.info("Starting training")
 
 # for Accelerate use
-accelerator = Accelerator()
+#accelerator = Accelerator()
 # for TensorBoard logging
 tensorboard_callback = get_tb_callback(config,instance_name)
 
