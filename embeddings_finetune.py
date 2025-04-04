@@ -173,7 +173,9 @@ train_dataloader = DataLoader(
 
 def convert_to_sentence_transformer_format(dataset):
     examples = []
+    logging.info(f'dataset:\n{dataset}')
     for item in dataset:
+        logging.info(f'\titem: {item}')
         # For MultipleNegativesRankingLoss
         examples.append(InputExample(texts=[item.get('query'), item.get('positive')]))
         # For ContrastiveLoss, uncomment below instead
