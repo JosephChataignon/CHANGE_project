@@ -68,8 +68,9 @@ data_set = 'education_sample'
 model_name = "sentence-transformers/all-mpnet-base-v2"
 
 model = SentenceTransformer(model_name)
+torch.cuda.set_device(0) # work on one GPU only
 model.to(device)
-
+model.parallel_training = False
 
 # set name where the trained model will be saved
 instance_name = f"{model_name.replace('/','-')}_finetuned-on_{data_set}_{start_time}"
@@ -157,7 +158,6 @@ train_test_split = mnrl_dataset.train_test_split(test_size=0.1)
 train_dataset = train_test_split['train']
 test_dataset = train_test_split['test']
 
-
 def collate_fn(batch):
     query = [item['query'] for item in batch]
     positive = [item['positive'] for item in batch]
@@ -173,9 +173,7 @@ train_dataloader = DataLoader(
 
 def convert_to_sentence_transformer_format(dataset):
     examples = []
-    logging.info(f'dataset:\n{dataset}')
     for item in dataset:
-        logging.info(f'\titem: {item}')
         # For MultipleNegativesRankingLoss
         examples.append(InputExample(texts=[item.get('query'), item.get('positive')]))
         # For ContrastiveLoss, uncomment below instead
@@ -204,6 +202,12 @@ train_loss = losses.MultipleNegativesRankingLoss(model)
 train_examples = convert_to_sentence_transformer_format(train_dataset)
 train_dataloader = DataLoader(train_examples, shuffle=True, batch_size=16)
 
+
+# After creating train_examples
+logging.info(f"First example texts: {train_examples[0].texts}")
+logging.info(f"Device before training: {next(model.parameters()).device}")
+
+
 # Step 4: Train the model
 from sentence_transformers.evaluation import EmbeddingSimilarityEvaluator
 
@@ -218,6 +222,9 @@ output_path = "./finetuned-sentence-embedding-model"
 # Run the training
 
 
+logging.info("Checking model and data placement:")
+for param in model.parameters():
+    logging.info(f"Parameter device: {param.device}")
 
 
 display_CUDA_info(device)

@@ -1,6 +1,8 @@
 ## Project-specific
 logs/
+venv/
 saved_models/
+checkpoints/
 # Access tokens: git, huggingface
 .git_token
 .hf_token

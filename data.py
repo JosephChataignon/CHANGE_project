@@ -15,8 +15,6 @@ def get_file_paths(root_dir: str, file_extensions: list[str]) -> list[str]:
     root directory and its subdirectories.
     """
     file_paths = []
-    logging.warning(f'get_file_paths is called with arguments: {root_dir}, {file_extensions}')
-    
     for dirpath, _, filenames in os.walk(root_dir):
         for filename in filenames:
             if any(filename.endswith(f".{ext}") for ext in file_extensions):
