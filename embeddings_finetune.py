@@ -225,7 +225,9 @@ output_path = "./finetuned-sentence-embedding-model"
 logging.info("Checking model and data placement:")
 for param in model.parameters():
     logging.info(f"Parameter device: {param.device}")
-
+logging.info(f"CUDA available: {torch.cuda.is_available()}")
+logging.info(f"Current CUDA device: {torch.cuda.current_device()}")
+logging.info(f"Device count: {torch.cuda.device_count()}")
 
 display_CUDA_info(device)
 train_start_time = datetime.now()
@@ -239,7 +241,8 @@ try:
         evaluation_steps=1000,
         warmup_steps=warmup_steps,
         output_path=output_path,
-        show_progress_bar=True
+        show_progress_bar=True,
+        callback=display_CUDA_info,
     )
     train_end_time = datetime.now()
     logging.info(f"{train_end_time} - Training finished !")
