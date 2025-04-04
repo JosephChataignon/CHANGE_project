@@ -69,13 +69,13 @@ model_name = "sentence-transformers/all-mpnet-base-v2"
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 torch.cuda.set_device(0) # work on one GPU only
-torch.distributed.is_initialized = lambda: False  # This prevents distributed init
-model = SentenceTransformer(model_name)
+#torch.distributed.is_initialized = lambda: False  # This prevents distributed init
+model = SentenceTransformer(model_name, device='cuda:0')
 # Check if there are any DataParallel wrappers and unwrap them
-if hasattr(model, 'module'):
-    model = model.module
+#if hasattr(model, 'module'):
+#    model = model.module
 model.parallel_training = False
-model.to(device)
+#model.to(device)
 
 
 # set name where the trained model will be saved

@@ -73,7 +73,7 @@ def display_CUDA_info(device):
     if device.type == 'cuda':
         debug_str = f"Now using device: {device}"
         for i in range(torch.cuda.device_count()):
-            debug_str += '\n\t'+torch.cuda.get_device_name(i)+f" - device {1}"
+            debug_str += '\n\t'+torch.cuda.get_device_name(i)+f" - device {i}"
             debug_str += f'\n\t\tTotal memory available: {round(torch.cuda.get_device_properties(i).total_memory/1024**3,1)} GB'
             debug_str += f'\n\t\tAllocated memory: {round(torch.cuda.memory_allocated(i)/1024**3,1)} GB'
             debug_str += f'\n\t\tCached memory:    {round(torch.cuda.memory_reserved(i) /1024**3,1)} GB'
