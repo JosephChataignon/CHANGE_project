@@ -208,7 +208,7 @@ train_dataloader = DataLoader(train_examples, shuffle=True, batch_size=16)
 from sentence_transformers.evaluation import EmbeddingSimilarityEvaluator
 
 # Optional: Create an evaluator
-dev_examples = convert_to_sentence_transformer_format(test_dataset[:1000])  # Limit size for evaluation
+dev_examples = convert_to_sentence_transformer_format(test_dataset)  # [:1000] to Limit size for evaluation
 evaluator = EmbeddingSimilarityEvaluator.from_input_examples(dev_examples)
 
 # Configure training parameters
