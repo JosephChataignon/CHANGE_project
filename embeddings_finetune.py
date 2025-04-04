@@ -175,10 +175,10 @@ def convert_to_sentence_transformer_format(dataset):
     examples = []
     for item in dataset:
         # For MultipleNegativesRankingLoss
-        examples.append(InputExample(texts=[item['query'], item['positive']]))
+        examples.append(InputExample(texts=[item.get('query'), item.get('positive')]))
         # For ContrastiveLoss, uncomment below instead
-        # examples.append(InputExample(texts=[item['query'], item['positive']], label=1.0))
-        # examples.append(InputExample(texts=[item['query'], item['negative']], label=0.0))
+        # examples.append(InputExample(texts=[item.get('query'), item.get('positive')], label=1.0))
+        # examples.append(InputExample(texts=[item.get('query'), item.get('negative')], label=0.0))
     return examples
 
 # move to GPU
@@ -190,6 +190,7 @@ def convert_to_sentence_transformer_format(dataset):
 
 
 ################################# TRAINING ########################################
+logging.info("Starting training")
 
 # for Accelerate use
 accelerator = Accelerator()
