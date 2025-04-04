@@ -80,6 +80,7 @@ echo " === "
 echo "Executing Python script: $fullscriptpath , in Apptainer container: ubuntu_env.sif"
 apptainer exec --nv \
     $SOFTWARE_BIND \
+    --bind "$STORAGE_DIR":"$STORAGE_DIR" \
     ~/ubuntu_env.sif \
     accelerate launch --config_file "$CHANGE_PROJ_DIR/$ACCELERATE_CONFIG" "$fullscriptpath"
 
