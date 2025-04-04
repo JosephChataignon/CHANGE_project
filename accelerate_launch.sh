@@ -84,5 +84,3 @@ apptainer exec --nv \
     ~/ubuntu_env.sif \
     accelerate launch --config_file "$CHANGE_PROJ_DIR/$ACCELERATE_CONFIG" "$fullscriptpath"
 
-# removed because parameter in .env now
-#    --bind "$STORAGE_DIR":/research_storage \

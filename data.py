@@ -15,26 +15,13 @@ def get_file_paths(root_dir: str, file_extensions: list[str]) -> list[str]:
     root directory and its subdirectories.
     """
     file_paths = []
-    logging.info(f'get_file_paths is called with arguments: {root_dir}, {file_extensions}')
+    logging.warning(f'get_file_paths is called with arguments: {root_dir}, {file_extensions}')
     
-    # Check if directory exists
-    assert os.path.exists(root_dir), f"The directory {root_dir} was not found."
-
-    # Add logging for each directory visit
     for dirpath, _, filenames in os.walk(root_dir):
-        logging.info(f'Visiting directory: {dirpath}')
-        logging.info(f'Found files: {filenames}')
-
         for filename in filenames:
-            logging.info(f'examined filename: {filename}')
-            for ext in file_extensions:
-                logging.info(f'\tends with {ext} : {filename.endswith(f".{ext}")}')
             if any(filename.endswith(f".{ext}") for ext in file_extensions):
-                full_path = os.path.join(dirpath, filename)
-                file_paths.append(full_path)
-                logging.info(f'Added file: {full_path}')
-
-    logging.info(f'Total files found: {len(file_paths)}')
+                file_paths.append(os.path.join(dirpath, filename))
+    
     return file_paths
 
 
