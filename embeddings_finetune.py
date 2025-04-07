@@ -5,8 +5,8 @@ Launcher file for the fine-tuning of embeddings models
 
 ################################ Imports ################################
 import torch
-import torch.nn.functional as F
-import torch.backends.cuda as cuda
+import torch.distributed as dist
+from torch.nn.parallel import DistributedDataParallel
 from torch.utils.data import DataLoader, IterableDataset, Dataset as TorchDataset
 from sklearn.model_selection import train_test_split
 
@@ -25,7 +25,6 @@ from nltk.tokenize.punkt import PunktSentenceTokenizer
 from datetime import datetime, timedelta
 from tqdm import tqdm
 from dotenv import load_dotenv, dotenv_values
-from peft import LoraConfig
 
 from datasets import Dataset as HFDataset, load_dataset
 
@@ -52,13 +51,16 @@ root_logger = logging.getLogger()
 transformers_logger = transformers.logging.get_logger()
 setup_logging(config, root_logger, transformers_logger)
 
+## Setup CUDA
+dist.init_process_group(backend='nccl')
+local_rank = int(os.environ["LOCAL_RANK"])
+torch.cuda.set_device(local_rank)
+
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 # logs CUDA info with DEBUG level
 display_CUDA_info(device)
 
 logging.info("Setup finished, starting script\n\n")
-
-
 
 ############################### LOADING MODEL, TOKENIZER AND DATA ###############################
 
@@ -68,15 +70,12 @@ data_set = 'education_sample'
 # Chose model (examples: "Lajavaness/bilingual-embedding-large", "sentence-transformers/all-mpnet-base-v2"...)
 model_name = "sentence-transformers/all-mpnet-base-v2"
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
-torch.cuda.set_device(0) # work on one GPU only
+#os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+#torch.cuda.set_device(0) # work on one GPU only
 #torch.distributed.is_initialized = lambda: False  # This prevents distributed init
-model = SentenceTransformer(model_name, device='cuda:0')
-# Check if there are any DataParallel wrappers and unwrap them
-#if hasattr(model, 'module'):
-#    model = model.module
+model = SentenceTransformer(model_name, device=f'cuda:{local_rank}')
+model = DistributedDataParallel(model, device_ids=[local_rank])
 model.parallel_training = False
-#model.to(device)
 
 
 # set name where the trained model will be saved
@@ -208,7 +207,8 @@ logging.info("Starting training")
 # for TensorBoard logging
 tensorboard_callback = get_tb_callback(config,instance_name)
 
-loss = losses.MultipleNegativesRankingLoss(model).to(device)
+#loss = losses.MultipleNegativesRankingLoss(model).to(device)
+loss = losses.MultipleNegativesRankingLoss(model).to(torch.device(f'cuda:{local_rank}'))
 
 # train_examples = convert_to_sentence_transformer_format(train_dataset)
 # train_dataloader = DataLoader(train_examples, shuffle=True, batch_size=16)
@@ -307,5 +307,3 @@ logging.info(f"Time spent on training: {train_end_time - train_start_time}")
 # Save the fine-tuned model
 model.save_pretrained(f"{config['SAVED_MODELS_DIR']}/{instance_name}")
 logging.info(f"model saved at {config['SAVED_MODELS_DIR']}/{instance_name}")
-
-
