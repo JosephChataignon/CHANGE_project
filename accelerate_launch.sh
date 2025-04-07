@@ -78,13 +78,14 @@ echo "https://github.com/JosephChataignon/CHANGE_project/commit/$(git rev-parse 
 
 echo " === "
 echo "Executing Python script: $fullscriptpath , in Apptainer container: ubuntu_env.sif"
+# embeddings_finetune works with SentenceTransformers which is incompatible with Accelerate
 if [[ "$fullscriptpath" == *"/embeddings_finetune.py" ]]; then
-    echo "Execution with Torch Distributed."
+    echo "Execution with Torchrun."
     apptainer exec --nv \
         $SOFTWARE_BIND \
         --bind "$STORAGE_DIR":"$STORAGE_DIR" \
         ~/ubuntu_env.sif \
-        python3 -m torch.distributed.launch --nproc_per_node=2  "$fullscriptpath"
+        torchrun --nproc_per_node=2  "$fullscriptpath"
 else
     echo "Execution with Accelerate."
     apptainer exec --nv \
