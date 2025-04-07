@@ -84,97 +84,8 @@ display_CUDA_info(device)
 ## LOAD DATASET
 logging.info(f'Loading data set: {data_set}')
 dataset = get_CHANGE_data_for_sentences(data_set, config['DATA_STORAGE'])
-
-
-
-# # Process the dataset to extract sentences
-# sentence_dataset = dataset.map(
-#     segment_documents, 
-#     batched=True, 
-#     remove_columns=dataset.column_names
-# )
-# logging.info(f"Dataset documents are chunked, now we have {len(sentence_dataset)} sentences.")
-
-# # Create training pairs for contrastive learning
-# def create_pairs(dataset, batch_size=1000):
-#     sentences = dataset["sentence"]
-#     doc_ids = dataset["doc_id"]
-#     pairs = []
-    
-#     # Strategy: Sentences from same document are positive pairs
-#     # Sentences from different documents are negative pairs
-#     for i in range(0, len(sentences), batch_size):
-#         batch_sentences = sentences[i:i+batch_size]
-#         batch_doc_ids = doc_ids[i:i+batch_size]
-        
-#         for j in range(len(batch_sentences)):
-#             # Find positive examples (from same document)
-#             pos_indices = [k for k in range(len(batch_sentences)) 
-#                           if batch_doc_ids[k] == batch_doc_ids[j] and k != j]
-            
-#             if pos_indices:
-#                 pos_idx = random.choice(pos_indices)
-                
-#                 # Find negative examples (from different documents)
-#                 neg_indices = [k for k in range(len(batch_sentences)) 
-#                               if batch_doc_ids[k] != batch_doc_ids[j]]
-                
-#                 if neg_indices:
-#                     neg_idx = random.choice(neg_indices)
-                    
-#                     pairs.append({
-#                         "anchor": batch_sentences[j],
-#                         "positive": batch_sentences[pos_idx],
-#                         "negative": batch_sentences[neg_idx]
-#                     })
-    
-#     return HFDataset.from_list(pairs)
-
-# # Create pairs dataset
-# pairs_dataset = create_pairs(sentence_dataset)
-
-# # Reformat for MultipleNegativeRankingLoss
-# def format_for_mnrl(examples):
-#     return {
-#         "query": examples["anchor"],
-#         "positive": examples["positive"],
-#         # For MNRL, the negatives in the batch will be used
-#         # But you can also explicitly provide them
-#         "negative": examples["negative"]
-#     }
-
-# mnrl_dataset = pairs_dataset.map(format_for_mnrl)
-
-# Split and prepare for training
-# train_test_split = mnrl_dataset.train_test_split(test_size=0.1)
-# train_dataset = train_test_split['train']
-# test_dataset = train_test_split['test']
-
-# def collate_fn(batch):
-#     query = [item['query'] for item in batch]
-#     positive = [item['positive'] for item in batch]
-#     negative = [item['negative'] for item in batch]
-#     return {"query": query, "positive": positive, "negative": negative}
-
-# train_dataloader = DataLoader(
-#     train_dataset, 
-#     batch_size=16, 
-#     shuffle=True, 
-#     collate_fn=collate_fn
-# )
-
-# def convert_to_sentence_transformer_format(dataset):
-#     examples = []
-#     for item in dataset:
-#         # For MultipleNegativesRankingLoss
-#         examples.append(InputExample(texts=[item.get('query'), item.get('positive')]))
-#         # For ContrastiveLoss, uncomment below instead
-#         # examples.append(InputExample(texts=[item.get('query'), item.get('positive')], label=1.0))
-#         # examples.append(InputExample(texts=[item.get('query'), item.get('negative')], label=0.0))
-#     return examples
-
-dataset = load_dataset("sentence-transformers/all-nli", "triplet")
-train_dataset = dataset["train"].select(range(100_000))
+#dataset = load_dataset("sentence-transformers/all-nli", "triplet")
+train_dataset = dataset["train"].select(range(1000))
 eval_dataset = dataset["dev"]
 test_dataset = dataset["test"]
 
@@ -193,7 +104,7 @@ dev_evaluator = TripletEvaluator(
     anchors=eval_dataset["anchor"],
     positives=eval_dataset["positive"],
     negatives=eval_dataset["negative"],
-    name="all-nli-dev",
+    name=data_set,
 )
 dev_evaluator(model.module)
 
