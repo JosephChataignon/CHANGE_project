@@ -74,7 +74,7 @@ model_name = "sentence-transformers/all-mpnet-base-v2"
 #torch.cuda.set_device(0) # work on one GPU only
 #torch.distributed.is_initialized = lambda: False  # This prevents distributed init
 model = SentenceTransformer(model_name, device=f'cuda:{local_rank}')
-model = DistributedDataParallel(model, device_ids=[local_rank])
+model = DistributedDataParallel(model, device_ids=[local_rank],find_unused_parameters=True)
 model.parallel_training = False
 
 
