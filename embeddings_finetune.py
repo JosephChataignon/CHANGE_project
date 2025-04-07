@@ -85,7 +85,7 @@ display_CUDA_info(device)
 logging.info(f'Loading data set: {data_set}')
 dataset = get_CHANGE_data_for_sentences(data_set, config['DATA_STORAGE'])
 #dataset = load_dataset("sentence-transformers/all-nli", "triplet")
-train_dataset = dataset["train"].select(range(1000))
+train_dataset = dataset["train"])
 eval_dataset = dataset["dev"]
 test_dataset = dataset["test"]
 
