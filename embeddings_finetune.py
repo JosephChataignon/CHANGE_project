@@ -11,9 +11,10 @@ from torch.utils.data import DataLoader, IterableDataset, Dataset as TorchDatase
 from sklearn.model_selection import train_test_split
 
 import transformers
-from transformers import pipeline, AutoTokenizer, AutoModelForCausalLM, TrainingArguments
+from transformers import pipeline, AutoTokenizer, AutoModel, AutoModelForCausalLM, TrainingArguments
 from transformers import Trainer, LineByLineTextDataset, TextDataset, DataCollatorForLanguageModeling
-from sentence_transformers import SentenceTransformer, losses, InputExample
+from sentence_transformers import SentenceTransformer, losses, InputExample, SentenceTransformerTrainer, SentenceTransformerTrainingArguments
+from sentence_transformers.training_args import BatchSamplers
 from accelerate import Accelerator
 from trl import SFTTrainer, DataCollatorForCompletionOnlyLM
 
@@ -88,104 +89,108 @@ display_CUDA_info(device)
 
 ## Load dataset
 logging.info(f'Loading data set: {data_set}')
-dataset = get_CHANGE_data(data_set, config['DATA_STORAGE'])
+#dataset = get_CHANGE_data(data_set, config['DATA_STORAGE'])
 
-def segment_documents(examples):
-    all_sentences = []
-    doc_ids = []
-    tokenizer = PunktSentenceTokenizer()
-    for i, text in enumerate(examples["text"]):
-        sentences = tokenizer.tokenize(text)
-        all_sentences.extend(sentences)
-        doc_ids.extend([i] * len(sentences))
+# def segment_documents(examples):
+#     all_sentences = []
+#     doc_ids = []
+#     tokenizer = PunktSentenceTokenizer()
+#     for i, text in enumerate(examples["text"]):
+#         sentences = tokenizer.tokenize(text)
+#         all_sentences.extend(sentences)
+#         doc_ids.extend([i] * len(sentences))
     
-    return {"sentence": all_sentences, "doc_id": doc_ids}
+#     return {"sentence": all_sentences, "doc_id": doc_ids}
 
-# Process the dataset to extract sentences
-sentence_dataset = dataset.map(
-    segment_documents, 
-    batched=True, 
-    remove_columns=dataset.column_names
-)
-logging.info(f"Dataset documents are chunked, now we have {len(sentence_dataset)} sentences.")
+# # Process the dataset to extract sentences
+# sentence_dataset = dataset.map(
+#     segment_documents, 
+#     batched=True, 
+#     remove_columns=dataset.column_names
+# )
+# logging.info(f"Dataset documents are chunked, now we have {len(sentence_dataset)} sentences.")
 
-# Create training pairs for contrastive learning
-def create_pairs(dataset, batch_size=1000):
-    sentences = dataset["sentence"]
-    doc_ids = dataset["doc_id"]
-    pairs = []
+# # Create training pairs for contrastive learning
+# def create_pairs(dataset, batch_size=1000):
+#     sentences = dataset["sentence"]
+#     doc_ids = dataset["doc_id"]
+#     pairs = []
     
-    # Strategy: Sentences from same document are positive pairs
-    # Sentences from different documents are negative pairs
-    for i in range(0, len(sentences), batch_size):
-        batch_sentences = sentences[i:i+batch_size]
-        batch_doc_ids = doc_ids[i:i+batch_size]
+#     # Strategy: Sentences from same document are positive pairs
+#     # Sentences from different documents are negative pairs
+#     for i in range(0, len(sentences), batch_size):
+#         batch_sentences = sentences[i:i+batch_size]
+#         batch_doc_ids = doc_ids[i:i+batch_size]
         
-        for j in range(len(batch_sentences)):
-            # Find positive examples (from same document)
-            pos_indices = [k for k in range(len(batch_sentences)) 
-                          if batch_doc_ids[k] == batch_doc_ids[j] and k != j]
+#         for j in range(len(batch_sentences)):
+#             # Find positive examples (from same document)
+#             pos_indices = [k for k in range(len(batch_sentences)) 
+#                           if batch_doc_ids[k] == batch_doc_ids[j] and k != j]
             
-            if pos_indices:
-                pos_idx = random.choice(pos_indices)
+#             if pos_indices:
+#                 pos_idx = random.choice(pos_indices)
                 
-                # Find negative examples (from different documents)
-                neg_indices = [k for k in range(len(batch_sentences)) 
-                              if batch_doc_ids[k] != batch_doc_ids[j]]
+#                 # Find negative examples (from different documents)
+#                 neg_indices = [k for k in range(len(batch_sentences)) 
+#                               if batch_doc_ids[k] != batch_doc_ids[j]]
                 
-                if neg_indices:
-                    neg_idx = random.choice(neg_indices)
+#                 if neg_indices:
+#                     neg_idx = random.choice(neg_indices)
                     
-                    pairs.append({
-                        "anchor": batch_sentences[j],
-                        "positive": batch_sentences[pos_idx],
-                        "negative": batch_sentences[neg_idx]
-                    })
+#                     pairs.append({
+#                         "anchor": batch_sentences[j],
+#                         "positive": batch_sentences[pos_idx],
+#                         "negative": batch_sentences[neg_idx]
+#                     })
     
-    return HFDataset.from_list(pairs)
+#     return HFDataset.from_list(pairs)
 
-# Create pairs dataset
-pairs_dataset = create_pairs(sentence_dataset)
+# # Create pairs dataset
+# pairs_dataset = create_pairs(sentence_dataset)
 
-# Reformat for MultipleNegativeRankingLoss
-def format_for_mnrl(examples):
-    return {
-        "query": examples["anchor"],
-        "positive": examples["positive"],
-        # For MNRL, the negatives in the batch will be used
-        # But you can also explicitly provide them
-        "negative": examples["negative"]
-    }
+# # Reformat for MultipleNegativeRankingLoss
+# def format_for_mnrl(examples):
+#     return {
+#         "query": examples["anchor"],
+#         "positive": examples["positive"],
+#         # For MNRL, the negatives in the batch will be used
+#         # But you can also explicitly provide them
+#         "negative": examples["negative"]
+#     }
 
-mnrl_dataset = pairs_dataset.map(format_for_mnrl)
+# mnrl_dataset = pairs_dataset.map(format_for_mnrl)
 
 # Split and prepare for training
-train_test_split = mnrl_dataset.train_test_split(test_size=0.1)
-train_dataset = train_test_split['train']
-test_dataset = train_test_split['test']
+# train_test_split = mnrl_dataset.train_test_split(test_size=0.1)
+# train_dataset = train_test_split['train']
+# test_dataset = train_test_split['test']
+dataset = load_dataset("sentence-transformers/all-nli", "triplet")
+train_dataset = dataset["train"].select(range(100_000))
+eval_dataset = dataset["dev"]
+test_dataset = dataset["test"]
 
-def collate_fn(batch):
-    query = [item['query'] for item in batch]
-    positive = [item['positive'] for item in batch]
-    negative = [item['negative'] for item in batch]
-    return {"query": query, "positive": positive, "negative": negative}
+# def collate_fn(batch):
+#     query = [item['query'] for item in batch]
+#     positive = [item['positive'] for item in batch]
+#     negative = [item['negative'] for item in batch]
+#     return {"query": query, "positive": positive, "negative": negative}
 
-train_dataloader = DataLoader(
-    train_dataset, 
-    batch_size=16, 
-    shuffle=True, 
-    collate_fn=collate_fn
-)
+# train_dataloader = DataLoader(
+#     train_dataset, 
+#     batch_size=16, 
+#     shuffle=True, 
+#     collate_fn=collate_fn
+# )
 
-def convert_to_sentence_transformer_format(dataset):
-    examples = []
-    for item in dataset:
-        # For MultipleNegativesRankingLoss
-        examples.append(InputExample(texts=[item.get('query'), item.get('positive')]))
-        # For ContrastiveLoss, uncomment below instead
-        # examples.append(InputExample(texts=[item.get('query'), item.get('positive')], label=1.0))
-        # examples.append(InputExample(texts=[item.get('query'), item.get('negative')], label=0.0))
-    return examples
+# def convert_to_sentence_transformer_format(dataset):
+#     examples = []
+#     for item in dataset:
+#         # For MultipleNegativesRankingLoss
+#         examples.append(InputExample(texts=[item.get('query'), item.get('positive')]))
+#         # For ContrastiveLoss, uncomment below instead
+#         # examples.append(InputExample(texts=[item.get('query'), item.get('positive')], label=1.0))
+#         # examples.append(InputExample(texts=[item.get('query'), item.get('negative')], label=0.0))
+#     return examples
 
 # move to GPU
 # tokenized_datasets = tokenized_datasets.map(lambda batch: {k: v.to(device).long() if isinstance(v, torch.Tensor) else v for k, v in batch.items()})
@@ -203,34 +208,64 @@ logging.info("Starting training")
 # for TensorBoard logging
 tensorboard_callback = get_tb_callback(config,instance_name)
 
-train_loss = losses.MultipleNegativesRankingLoss(model).to(device)
+loss = losses.MultipleNegativesRankingLoss(model).to(device)
 
-train_examples = convert_to_sentence_transformer_format(train_dataset)
-train_dataloader = DataLoader(train_examples, shuffle=True, batch_size=16)
+# train_examples = convert_to_sentence_transformer_format(train_dataset)
+# train_dataloader = DataLoader(train_examples, shuffle=True, batch_size=16)
 
 
 # After creating train_examples
-logging.info(f"First example texts: {train_examples[0].texts}")
-logging.info(f"Device before training: {next(model.parameters()).device}")
+# logging.info(f"First example texts: {train_examples[0].texts}")
+# logging.info(f"Device before training: {next(model.parameters()).device}")
 
 
 # Step 4: Train the model
-from sentence_transformers.evaluation import EmbeddingSimilarityEvaluator
+from sentence_transformers.evaluation import EmbeddingSimilarityEvaluator, TripletEvaluator
 
 # Optional: Create an evaluator
-dev_examples = convert_to_sentence_transformer_format(test_dataset)  # [:1000] to Limit size for evaluation
-evaluator = EmbeddingSimilarityEvaluator.from_input_examples(dev_examples)
+# dev_examples = convert_to_sentence_transformer_format(test_dataset)  # [:1000] to Limit size for evaluation
+# evaluator = EmbeddingSimilarityEvaluator.from_input_examples(dev_examples)
+dev_evaluator = TripletEvaluator(
+    anchors=eval_dataset["anchor"],
+    positives=eval_dataset["positive"],
+    negatives=eval_dataset["negative"],
+    name="all-nli-dev",
+)
+dev_evaluator(model)
 
 # Configure training parameters
-warmup_steps = int(len(train_dataloader) * 0.1)  # 10% of training data for warmup
-output_path = "./finetuned-sentence-embedding-model"
+# warmup_steps = int(len(train_dataloader) * 0.1)  # 10% of training data for warmup
+# output_path = "./finetuned-sentence-embedding-model"
 
 # Run the training
+args = SentenceTransformerTrainingArguments(
+    # Required parameter:
+    output_dir=os.path.join(config['SAVED_MODELS_DIR'],'embedding-finetune-test'),
+    # Optional training parameters:
+    num_train_epochs=1,
+    per_device_train_batch_size=16,
+    per_device_eval_batch_size=16,
+    warmup_ratio=0.1,
+    fp16=True,  # Set to False if GPU can't handle FP16
+    bf16=True,  # Set to True if GPU supports BF16
+    batch_sampler=BatchSamplers.NO_DUPLICATES,  # MultipleNegativesRankingLoss benefits from no duplicates
+    # Optional tracking/debugging parameters:
+    eval_strategy="steps",
+    eval_steps=100,
+    save_strategy="steps",
+    save_steps=100,
+    save_total_limit=2,
+    logging_steps=100,
+)
+trainer = SentenceTransformerTrainer(
+    model=model,
+    args=args,
+    train_dataset=train_dataset,
+    eval_dataset=eval_dataset,
+    loss=loss,
+    evaluator=dev_evaluator,
+)
 
-
-logging.info("Checking model and data placement:")
-for param in model.parameters():
-    logging.info(f"Parameter device: {param.device}")
 logging.info(f"CUDA available: {torch.cuda.is_available()}")
 logging.info(f"Current CUDA device: {torch.cuda.current_device()}")
 logging.info(f"Device count: {torch.cuda.device_count()}")
@@ -240,16 +275,17 @@ train_start_time = datetime.now()
 logging.info(f"{train_start_time} - Starting training")
 try:
     #trainer.compute_loss = compute_loss
-    model.fit(
-        train_objectives=[(train_dataloader, train_loss)],
-        evaluator=evaluator,
-        epochs=3,  # Adjust based on your dataset size and needs
-        evaluation_steps=1000,
-        warmup_steps=warmup_steps,
-        output_path=output_path,
-        show_progress_bar=True,
-        callback=display_CUDA_info,
-    )
+    # model.fit(
+    #     train_objectives=[(train_dataloader, train_loss)],
+    #     evaluator=evaluator,
+    #     epochs=3,  # Adjust based on your dataset size and needs
+    #     evaluation_steps=1000,
+    #     warmup_steps=warmup_steps,
+    #     output_path=output_path,
+    #     show_progress_bar=True,
+    #     callback=display_CUDA_info,
+    # )
+    trainer.train()
     train_end_time = datetime.now()
     logging.info(f"{train_end_time} - Training finished !")
     display_CUDA_info(device)
