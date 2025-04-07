@@ -246,7 +246,7 @@ args = SentenceTransformerTrainingArguments(
     per_device_train_batch_size=16,
     per_device_eval_batch_size=16,
     warmup_ratio=0.1,
-    fp16=True,  # Set to False if GPU can't handle FP16
+    fp16=False,  # Set to False if GPU can't handle FP16
     bf16=True,  # Set to True if GPU supports BF16
     batch_sampler=BatchSamplers.NO_DUPLICATES,  # MultipleNegativesRankingLoss benefits from no duplicates
     # Optional tracking/debugging parameters:
