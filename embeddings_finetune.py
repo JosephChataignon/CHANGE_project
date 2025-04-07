@@ -243,11 +243,11 @@ args = SentenceTransformerTrainingArguments(
     output_dir=os.path.join(config['SAVED_MODELS_DIR'],'embedding-finetune-test'),
     # Optional training parameters:
     num_train_epochs=1,
-    per_device_train_batch_size=16,
-    per_device_eval_batch_size=16,
+    per_device_train_batch_size=8,
+    per_device_eval_batch_size=8,
     warmup_ratio=0.1,
     fp16=False,  # Set to False if GPU can't handle FP16
-    bf16=True,  # Set to True if GPU supports BF16
+    bf16=False,  # Set to True if GPU supports BF16
     batch_sampler=BatchSamplers.NO_DUPLICATES,  # MultipleNegativesRankingLoss benefits from no duplicates
     # Optional tracking/debugging parameters:
     eval_strategy="steps",
@@ -256,6 +256,9 @@ args = SentenceTransformerTrainingArguments(
     save_steps=100,
     save_total_limit=2,
     logging_steps=100,
+    gradient_accumulation_steps=2,  # Effectively same batch size but less memory
+    dataloader_num_workers=0,       # Disable parallel data loading
+    dataloader_pin_memory=False,    # Disable pinned memory
 )
 trainer = SentenceTransformerTrainer(
     model=model,
