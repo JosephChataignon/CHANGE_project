@@ -305,5 +305,5 @@ logging.info(f"Time spent until training starts: {train_start_time - start_time}
 logging.info(f"Time spent on training: {train_end_time - train_start_time}")
 
 # Save the fine-tuned model
-model.save_pretrained(f"{config['SAVED_MODELS_DIR']}/{instance_name}")
+model.module.save_pretrained(f"{config['SAVED_MODELS_DIR']}/{instance_name}")
 logging.info(f"model saved at {config['SAVED_MODELS_DIR']}/{instance_name}")
