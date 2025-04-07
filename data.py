@@ -123,9 +123,9 @@ def get_CHANGE_data_for_sentences(data_type, data_storage):
             with open(file_path, 'r', encoding='utf-8') as f:
                 text = f.read()
                 texts.append({"text": text, "file_name": os.path.basename(file_path)})
-
+        
         # Segment documents into sentences
-        dataset = Dataset.from_dict(texts)
+        dataset = Dataset.from_dict({"text": [text["text"] for text in texts], "file_name": [text["file_name"] for text in texts]})
         sentence_dataset = dataset.map(segment_documents, batched=True, remove_columns=dataset.column_names)
 
         # Create triplets
