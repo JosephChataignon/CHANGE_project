@@ -231,7 +231,7 @@ dev_evaluator = TripletEvaluator(
     negatives=eval_dataset["negative"],
     name="all-nli-dev",
 )
-dev_evaluator(model)
+dev_evaluator(model.module)
 
 # Configure training parameters
 # warmup_steps = int(len(train_dataloader) * 0.1)  # 10% of training data for warmup
