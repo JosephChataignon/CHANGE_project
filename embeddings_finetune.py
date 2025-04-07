@@ -15,7 +15,7 @@ from transformers import pipeline, AutoTokenizer, AutoModel, AutoModelForCausalL
 from transformers import Trainer, LineByLineTextDataset, TextDataset, DataCollatorForLanguageModeling
 from sentence_transformers import SentenceTransformer, losses, InputExample, SentenceTransformerTrainer, SentenceTransformerTrainingArguments
 from sentence_transformers.training_args import BatchSamplers
-#from accelerate import Accelerator # maybe the import alone is causing the issue ?
+from sentence_transformers.evaluation import EmbeddingSimilarityEvaluator, TripletEvaluator
 from trl import SFTTrainer, DataCollatorForCompletionOnlyLM
 
 import os, sys, copy, logging, random
@@ -70,9 +70,6 @@ data_set = 'education_sample'
 # Chose model (examples: "Lajavaness/bilingual-embedding-large", "sentence-transformers/all-mpnet-base-v2"...)
 model_name = "sentence-transformers/all-mpnet-base-v2"
 
-#os.environ["CUDA_VISIBLE_DEVICES"] = "0"
-#torch.cuda.set_device(0) # work on one GPU only
-#torch.distributed.is_initialized = lambda: False  # This prevents distributed init
 model = SentenceTransformer(model_name, device=f'cuda:{local_rank}')
 model = DistributedDataParallel(model, device_ids=[local_rank],find_unused_parameters=True)
 model.parallel_training = False
@@ -86,7 +83,7 @@ logging.info(f'Output (fine-tuned) model will be saved with the name: {instance_
 display_CUDA_info(device)
 
 
-## Load dataset
+## LOAD DATASET
 logging.info(f'Loading data set: {data_set}')
 #dataset = get_CHANGE_data(data_set, config['DATA_STORAGE'])
 
@@ -163,10 +160,6 @@ logging.info(f'Loading data set: {data_set}')
 # train_test_split = mnrl_dataset.train_test_split(test_size=0.1)
 # train_dataset = train_test_split['train']
 # test_dataset = train_test_split['test']
-dataset = load_dataset("sentence-transformers/all-nli", "triplet")
-train_dataset = dataset["train"].select(range(100_000))
-eval_dataset = dataset["dev"]
-test_dataset = dataset["test"]
 
 # def collate_fn(batch):
 #     query = [item['query'] for item in batch]
@@ -191,40 +184,22 @@ test_dataset = dataset["test"]
 #         # examples.append(InputExample(texts=[item.get('query'), item.get('negative')], label=0.0))
 #     return examples
 
-# move to GPU
-# tokenized_datasets = tokenized_datasets.map(lambda batch: {k: v.to(device).long() if isinstance(v, torch.Tensor) else v for k, v in batch.items()})
-# display_CUDA_info(device)
-
-
+dataset = load_dataset("sentence-transformers/all-nli", "triplet")
+train_dataset = dataset["train"].select(range(100_000))
+eval_dataset = dataset["dev"]
+test_dataset = dataset["test"]
 
 
 
 ################################# TRAINING ########################################
 logging.info("Starting training")
 
-# for Accelerate use
-#accelerator = Accelerator()
 # for TensorBoard logging
 tensorboard_callback = get_tb_callback(config,instance_name)
 
-#loss = losses.MultipleNegativesRankingLoss(model).to(device)
 loss = losses.MultipleNegativesRankingLoss(model).to(torch.device(f'cuda:{local_rank}'))
 
-# train_examples = convert_to_sentence_transformer_format(train_dataset)
-# train_dataloader = DataLoader(train_examples, shuffle=True, batch_size=16)
-
-
-# After creating train_examples
-# logging.info(f"First example texts: {train_examples[0].texts}")
-# logging.info(f"Device before training: {next(model.parameters()).device}")
-
-
-# Step 4: Train the model
-from sentence_transformers.evaluation import EmbeddingSimilarityEvaluator, TripletEvaluator
-
 # Optional: Create an evaluator
-# dev_examples = convert_to_sentence_transformer_format(test_dataset)  # [:1000] to Limit size for evaluation
-# evaluator = EmbeddingSimilarityEvaluator.from_input_examples(dev_examples)
 dev_evaluator = TripletEvaluator(
     anchors=eval_dataset["anchor"],
     positives=eval_dataset["positive"],
@@ -232,10 +207,6 @@ dev_evaluator = TripletEvaluator(
     name="all-nli-dev",
 )
 dev_evaluator(model.module)
-
-# Configure training parameters
-# warmup_steps = int(len(train_dataloader) * 0.1)  # 10% of training data for warmup
-# output_path = "./finetuned-sentence-embedding-model"
 
 # Run the training
 args = SentenceTransformerTrainingArguments(
@@ -277,17 +248,6 @@ display_CUDA_info(device)
 train_start_time = datetime.now()
 logging.info(f"{train_start_time} - Starting training")
 try:
-    #trainer.compute_loss = compute_loss
-    # model.fit(
-    #     train_objectives=[(train_dataloader, train_loss)],
-    #     evaluator=evaluator,
-    #     epochs=3,  # Adjust based on your dataset size and needs
-    #     evaluation_steps=1000,
-    #     warmup_steps=warmup_steps,
-    #     output_path=output_path,
-    #     show_progress_bar=True,
-    #     callback=display_CUDA_info,
-    # )
     trainer.train()
     train_end_time = datetime.now()
     logging.info(f"{train_end_time} - Training finished !")
