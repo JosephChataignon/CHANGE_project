@@ -261,7 +261,7 @@ args = SentenceTransformerTrainingArguments(
     dataloader_pin_memory=False,    # Disable pinned memory
 )
 trainer = SentenceTransformerTrainer(
-    model=model,
+    model=model.module,
     args=args,
     train_dataset=train_dataset,
     eval_dataset=eval_dataset,
