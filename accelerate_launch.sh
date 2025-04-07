@@ -78,7 +78,7 @@ echo "https://github.com/JosephChataignon/CHANGE_project/commit/$(git rev-parse 
 
 echo " === "
 echo "Executing Python script: $fullscriptpath , in Apptainer container: ubuntu_env.sif"
-if [ "$fullscriptpath" == *"/embeddings_finetune.py" ]; then
+if [[ "$fullscriptpath" == *"/embeddings_finetune.py" ]]; then
     echo "Execution with Torch Distributed."
     apptainer exec --nv \
         $SOFTWARE_BIND \
