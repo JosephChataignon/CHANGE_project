@@ -2,11 +2,10 @@
 """
 Helper file to hide the mess of getting data from various sources
 """
-import os
-import logging
-import unicodedata
-from datasets import load_dataset, Dataset
+import os, logging, random, unicodedata
+from datasets import load_dataset, Dataset, DatasetDict
 from collections import defaultdict
+from nltk.tokenize.punkt import PunktSentenceTokenizer
 
 
 def get_file_paths(root_dir: str, file_extensions: list[str]) -> list[str]:
@@ -27,15 +26,7 @@ def get_CHANGE_data(data_type, data_storage):
     assert isinstance(data_storage, str) and len(data_storage) > 0, f"data_storage should be a non-empty string, got '{data_storage}'"
 
     if data_type.lower() == "walser":
-        if os.getenv("COLAB_RELEASE_TAG"):
-            # if executed in Colab, this will try to get
-            # the files from Google drive
-            from google.colab import drive
-            drive.mount('/content/drive')
-            data_dir = "/content/drive/MyDrive/Unibe/"
-        else:
-            # from Ubelix container
-            data_dir = os.path.join(data_storage,'Projekt_Change_LLM/Walser_data/')
+        data_dir = os.path.join(data_storage,'Projekt_Change_LLM/Walser_data/')
         train_file = data_dir + "train_dataset.txt"
         test_file  = data_dir + "test_dataset.txt"
         return load_dataset("text", data_files={"train":train_file, "test":test_file})
@@ -89,7 +80,28 @@ def get_CHANGE_data(data_type, data_storage):
         dataset = dataset.map(substitute_chars)
         return dataset
         
-    elif data_type.lower() == 'education':
+
+
+def load_substitutions(substitutions_file):
+    """ This loads a file of substitutions where each line has 2 characters separated by a tab """
+    logging.info(f'preparing to substitute characters in the dataset, from file: {substitutions_file}')
+    # always replace superscript small E with umlaut/trema
+    character_pairs = {u'\u0308':u'\u0364'}
+    # Read the file and extract character pairs
+    with open(substitutions_file, 'r', encoding='utf-8') as f:
+        for line in f:
+            pair = line.strip().split('\t')
+            if len(pair) == 2:
+                character_pairs[pair[0]] = pair[1]
+            else:
+                logging.info(f"substitutions: this line does not have exactly 2 elements: {line.strip()}")
+    return character_pairs
+
+
+def get_CHANGE_data_for_sentences(data_type, data_storage):
+    assert isinstance(data_storage, str) and len(data_storage) > 0, f"data_storage should be a non-empty string, got '{data_storage}'"
+
+    if data_type.lower() == 'education':
         # find paths of all files
         data_dir = os.path.join(data_storage, 'Projekt_Change_LLM/Eduscience_data')
         # make test/train split - do we actually need it ?
@@ -111,25 +123,68 @@ def get_CHANGE_data(data_type, data_storage):
             with open(file_path, 'r', encoding='utf-8') as f:
                 text = f.read()
                 texts.append({"text": text, "file_name": os.path.basename(file_path)})
-        return Dataset.from_list(texts)
 
+        # Segment documents into sentences
+        dataset = Dataset.from_dict(texts)
+        sentence_dataset = dataset.map(segment_documents, batched=True, remove_columns=dataset.column_names)
 
+        # Create triplets
+        triplets = create_triplets(sentence_dataset)
 
- 
+        # Split into train, dev, and test sets
+        train_test_split = triplets.train_test_split(test_size=0.1)
+        train_dataset = train_test_split['train']
+        test_dataset = train_test_split['test']
 
-def load_substitutions(substitutions_file):
-    """ This loads a file of substitutions where each line has 2 characters separated by a tab """
-    logging.info(f'preparing to substitute characters in the dataset, from file: {substitutions_file}')
-    # always replace superscript small E with umlaut/trema
-    character_pairs = {u'\u0308':u'\u0364'}
-    # Read the file and extract character pairs
-    with open(substitutions_file, 'r', encoding='utf-8') as f:
-        for line in f:
-            pair = line.strip().split('\t')
-            if len(pair) == 2:
-                character_pairs[pair[0]] = pair[1]
-            else:
-                logging.info(f"substitutions: this line does not have exactly 2 elements: {line.strip()}")
-    return character_pairs
+        dev_test_split = test_dataset.train_test_split(test_size=0.5)
+        dev_dataset = dev_test_split['train']
+        test_dataset = dev_test_split['test']
 
+        return DatasetDict({
+            "train": train_dataset,
+            "dev": dev_dataset,
+            "test": test_dataset
+        })
+        
 
+def segment_documents(examples):
+    all_sentences = []
+    doc_ids = []
+    tokenizer = PunktSentenceTokenizer()
+    for i, text in enumerate(examples["text"]):
+        sentences = tokenizer.tokenize(text)
+        all_sentences.extend(sentences)
+        doc_ids.extend([i] * len(sentences))
+    
+    return {"sentence": all_sentences, "doc_id": doc_ids}
+
+def create_triplets(sentence_dataset):
+    sentences = sentence_dataset["sentence"]
+    doc_ids = sentence_dataset["doc_id"]
+    triplets = []
+
+    # Strategy: Sentences from the same document are positive pairs
+    # Sentences from different documents are negative pairs
+    for i in range(len(sentences)):
+        anchor = sentences[i]
+        anchor_doc_id = doc_ids[i]
+
+        # Find positive example (from the same document)
+        pos_indices = [j for j in range(len(sentences)) if doc_ids[j] == anchor_doc_id and j != i]
+        if pos_indices:
+            pos_idx = random.choice(pos_indices)
+            positive = sentences[pos_idx]
+
+            # Find negative example (from a different document)
+            neg_indices = [j for j in range(len(sentences)) if doc_ids[j] != anchor_doc_id]
+            if neg_indices:
+                neg_idx = random.choice(neg_indices)
+                negative = sentences[neg_idx]
+
+                triplets.append({
+                    "anchor": anchor,
+                    "positive": positive,
+                    "negative": negative
+                })
+
+    return Dataset.from_list(triplets)

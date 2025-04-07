@@ -20,8 +20,6 @@ from trl import SFTTrainer, DataCollatorForCompletionOnlyLM
 
 import os, sys, copy, logging, random
 import nltk
-from nltk.tokenize.punkt import PunktSentenceTokenizer
-#from transformers.utils import logging
 from datetime import datetime, timedelta
 from tqdm import tqdm
 from dotenv import load_dotenv, dotenv_values
@@ -31,7 +29,7 @@ from datasets import Dataset as HFDataset, load_dataset
 # in interactive sessions, uncomment this line:
 #sys.path.insert(0, r'/path/to/code/folder')
 from logging_utils import setup_logging, display_CUDA_info, print_trainable_parameters, get_tb_callback, inference_test
-from data import get_CHANGE_data
+from data import get_CHANGE_data, get_CHANGE_data_for_sentences
 from models import load_model
 
 ################################### SETUP ######################################
@@ -85,18 +83,9 @@ display_CUDA_info(device)
 
 ## LOAD DATASET
 logging.info(f'Loading data set: {data_set}')
-#dataset = get_CHANGE_data(data_set, config['DATA_STORAGE'])
+dataset = get_CHANGE_data_for_sentences(data_set, config['DATA_STORAGE'])
 
-# def segment_documents(examples):
-#     all_sentences = []
-#     doc_ids = []
-#     tokenizer = PunktSentenceTokenizer()
-#     for i, text in enumerate(examples["text"]):
-#         sentences = tokenizer.tokenize(text)
-#         all_sentences.extend(sentences)
-#         doc_ids.extend([i] * len(sentences))
-    
-#     return {"sentence": all_sentences, "doc_id": doc_ids}
+
 
 # # Process the dataset to extract sentences
 # sentence_dataset = dataset.map(
