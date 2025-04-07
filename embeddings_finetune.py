@@ -15,7 +15,7 @@ from transformers import pipeline, AutoTokenizer, AutoModel, AutoModelForCausalL
 from transformers import Trainer, LineByLineTextDataset, TextDataset, DataCollatorForLanguageModeling
 from sentence_transformers import SentenceTransformer, losses, InputExample, SentenceTransformerTrainer, SentenceTransformerTrainingArguments
 from sentence_transformers.training_args import BatchSamplers
-from accelerate import Accelerator
+#from accelerate import Accelerator # maybe the import alone is causing the issue ?
 from trl import SFTTrainer, DataCollatorForCompletionOnlyLM
 
 import os, sys, copy, logging, random
