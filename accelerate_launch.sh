@@ -17,7 +17,7 @@ detect_environment() {
     if [[ -d /storage/homefs/jc23c442 ]] || [[ "$HOSTNAME" == "submit"* ]]; then
         echo "ubelix"
     # Check for lab server-specific environment variables or paths
-    elif [[ "$HOSTNAME" == "srv" && "$USER" == "joseph" ]]; then
+    elif [[ ("$HOSTNAME" == "dhserver03" && "$USER" == "joseph") || ("$HOSTNAME" == "srv" && "$USER" == "joseph") ]]; then 
         echo "dhserver"
     else
         echo "unknown"
