@@ -150,8 +150,6 @@ trainer = SFTTrainer(
     eval_dataset=tokenized_datasets['test'],
     processing_class=tokenizer,
     peft_config=qlora_config,
-    dataset_text_field="text",
-    max_seq_length=2048,
     callbacks=[tensorboard_callback],
 )
 
