@@ -3,10 +3,13 @@ logs/
 venv/
 saved_models/
 checkpoints/
+
 # Access tokens: git, huggingface
 .git_token
 .hf_token
 .*token
+validation_stage_1/llm_config.yaml
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
