@@ -1,8 +1,13 @@
-import requests
-import json
+from dotenv import load_dotenv
+import os
 
-from utils import load_test_batterie, query_frag_api, query_anyllm
+from utils import load_test_batterie, query_frag_api, query_anyllm, query_ollama
 
+# Load environment variables from .env file
+env_file = '../.env' 
+load_dotenv(env_file)
+# Check if OLLAMA_HOST is loaded in the environment
+assert os.getenv('OLLAMA_HOST') is not None, "OLLAMA_HOST is not set in the environment"
 
 
 def validate_questions(df, responder='frag_api'):
@@ -14,7 +19,7 @@ def validate_questions(df, responder='frag_api'):
     Returns:
         pd.DataFrame: DataFrame with an additional column for responses.
     '''
-    available_responders = ['frag_api', 'gpt-5', 'deepseek'] #TODO: list all possible responders
+    available_responders = ['frag_api', 'gpt5', 'deepseek'] #TODO: list all possible responders
     assert responder in available_responders, f"Unknown  responder {responder}"
     
     for index, row in df.iterrows():

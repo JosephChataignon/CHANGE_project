@@ -34,8 +34,7 @@ def query_frag_api(prompt, base_url="http://change.dh.unibe.ch", n_results=5):
         response = requests.post(
             api_url,
             json=payload,
-            headers=headers,
-            timeout=60
+            headers=headers
         )
         
         # Raise an exception for bad status codes
@@ -64,8 +63,9 @@ def query_anyllm(prompt, llm):
     
     if llm == "gpt5":
         anyllm_config = {'provider': 'openai', 'model': 'gpt-5', 'api_key': os.getenv('OPENAI_API_KEY')}
-    elif llm == "deepseek":
-        anyllm_config = {'provider': 'ollama', 'model': 'deepseek-1.5'} # TODO: check syntax
+    # Moved to query_ollama until bug is fixed in any-llm
+    #elif llm == "deepseek":
+    #    anyllm_config = {'provider': 'ollama', 'model': 'deepseek-1.5', 'api_base': 'http://130.92.59.240:11434'} # TODO: check syntax
     
     response = completion(
         provider=anyllm_config['provider'], 
@@ -74,3 +74,20 @@ def query_anyllm(prompt, llm):
         messages=[{"role": "user", "content": prompt}]
     )
     return response.choices[0].message.content
+
+
+def query_ollama(prompt, model):
+    '''Need to add this because of a bug in any-llm Ollama provider.
+    I submitted a pull request, hopefully it gets fixed soon and I can 
+    run everything through any-llm and remove this function.
+    '''
+    response = requests.post(f'{os.getenv('OLLAMA_HOST')}/api/chat', 
+        json={
+            'model': model,
+            'messages': [{'role': 'user', 'content': prompt}],
+            'stream': False
+        })
+    response_text = response.json()['message']['content']
+    return response_text
+    
+    
