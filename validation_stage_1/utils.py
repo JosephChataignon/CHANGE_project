@@ -18,6 +18,28 @@ def load_test_batterie(file_path='Testbatterie_FRAG_Rel&Val.xlsx'):
 
     return df
 
+def search_frag_documents(query, base_url="http://change.dh.unibe.ch", n_results=5):
+    api_url = f"{base_url}/search_documents/"
+    data = {
+        'query':'what is the difference between western and japanese classrooms ?',
+        'number_results':5
+    }
+    try:
+        response = requests.post(
+            api_url, 
+            data=data
+        )
+
+        # Raise an exception for bad status codes
+        response.raise_for_status()
+        
+        # Parse and return the JSON response
+        return response.json()
+
+    except requests.exceptions.ConnectionError:
+        raise requests.RequestException(f"Failed to connect to {api_url}")
+    except json.JSONDecodeError:
+        raise ValueError("Invalid JSON response from API")
 
 def query_frag_api(prompt, base_url="http://change.dh.unibe.ch", n_results=5):
     api_url = f"{base_url}/api/chat/"
@@ -45,15 +67,6 @@ def query_frag_api(prompt, base_url="http://change.dh.unibe.ch", n_results=5):
         
     except requests.exceptions.ConnectionError:
         raise requests.RequestException(f"Failed to connect to {api_url}")
-    except requests.exceptions.HTTPError as e:
-        if response.status_code == 400:
-            error_msg = response.json().get('error', 'Bad request')
-            raise ValueError(f"API error: {error_msg}")
-        elif response.status_code == 500:
-            error_msg = response.json().get('error', 'Internal server error')
-            raise requests.RequestException(f"Server error: {error_msg}")
-        else:
-            raise requests.RequestException(f"HTTP {response.status_code}: {str(e)}")
     except json.JSONDecodeError:
         raise ValueError("Invalid JSON response from API")
 

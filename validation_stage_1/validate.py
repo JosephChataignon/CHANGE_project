@@ -1,7 +1,7 @@
 from dotenv import load_dotenv
 import os
 
-from utils import load_test_batterie, query_frag_api, query_anyllm, query_ollama
+from utils import load_test_batterie, query_frag_api, query_anyllm, query_ollama, search_frag_documents
 
 # Load environment variables from .env file
 env_file = '../.env' 
