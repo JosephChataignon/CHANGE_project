@@ -21,7 +21,7 @@ def load_test_batterie(file_path='Testbatterie_FRAG_Rel&Val.xlsx'):
 def search_frag_documents(query, base_url="http://change.dh.unibe.ch", n_results=5):
     api_url = f"{base_url}/search_documents/"
     data = {
-        'query':'what is the difference between western and japanese classrooms ?',
+        'query':query,
         'number_results':5
     }
     try:
@@ -76,9 +76,10 @@ def query_anyllm(prompt, llm):
     
     if llm == "gpt5":
         anyllm_config = {'provider': 'openai', 'model': 'gpt-5', 'api_key': os.getenv('OPENAI_API_KEY')}
-    # Moved to query_ollama until bug is fixed in any-llm
-    #elif llm == "deepseek":
-    #    anyllm_config = {'provider': 'ollama', 'model': 'deepseek-1.5', 'api_base': 'http://130.92.59.240:11434'} # TODO: check syntax
+    elif llm == "deepseekR1":
+        # Moved to query_ollama until bug is fixed in any-llm
+        # anyllm_config = {'provider': 'ollama', 'model': 'deepseek-1.5', 'api_base': 'http://130.92.59.240:11434'} # TODO: check syntax
+        return query_ollama(prompt, model='deepseek-r1:70b')
     
     response = completion(
         provider=anyllm_config['provider'], 
@@ -102,5 +103,4 @@ def query_ollama(prompt, model):
         })
     response_text = response.json()['message']['content']
     return response_text
-    
     
