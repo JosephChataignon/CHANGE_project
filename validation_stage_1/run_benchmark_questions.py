@@ -38,13 +38,15 @@ def validate_questions(df, responder='frag_api', use_docs=0):
     available_responders = ['frag_api', 'gpt5', 'deepseekR1'] 
     assert responder in available_responders, f"Unknown  responder {responder}"
     
+    newcolumn = f'{responder}_response'
+    # Initialize the new column with None values
+    df[newcolumn] = None
+    # if use_docs:
+    #     df['context_documents'] = None  # Optional: store retrieved documents
+    
     for index, row in df.iterrows():
-        newcolumn = f'{responder}_response'
         frage = row['Frage']
 
-        # Initialize the new column with None values
-        df[newcolumn] = None
-        
         # Query the API with the question
         if responder == 'frag_api':
             api_response = query_frag_api(frage)
@@ -67,7 +69,7 @@ def validate_questions(df, responder='frag_api', use_docs=0):
 # Run the validation
 df = load_test_batterie()
 for responder in ['deepseekR1']: # can use ['frag_api', 'gpt5', 'deepseekR1']
-    df = validate_questions(df,responder=responder)  # update df with new column
+    df = validate_questions(df,responder=responder,use_docs=5)  # update df with new column
 
 # Save the updated DataFrame to a new Excel file
 output_file = 'Testbatterie_FRAG_Rel&Val_with_LLM_response.xlsx'
