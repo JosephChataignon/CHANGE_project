@@ -45,6 +45,7 @@ def validate_questions(df, responder='frag_api', use_docs=0):
     #     df['context_documents'] = None  # Optional: store retrieved documents
     
     for index, row in df.iterrows():
+        print(f"Processing question {index}/{len(df)}: ID {row['Frage_ID']}")
         frage = row['Frage']
 
         # Query the API with the question
@@ -62,14 +63,16 @@ def validate_questions(df, responder='frag_api', use_docs=0):
     
         # Store the response in the new column
         df.at[index, newcolumn] = response_text
-        break  # Remove this break to process all questions; it's here for testing purposes
+        print(f"Response: {response_text}\n")
     return df
 
 
 # Run the validation
 df = load_test_batterie()
+print(f"Loaded {len(df)} questions for validation.")
 # In the end we use all with FRAG. Model has to be changed in FRAG config, not through API
 for responder in ['frag_api']: # can use ['frag_api', 'gpt5', 'deepseekR1']
+    print(f"Validating questions using responder: {responder}")
     df = validate_questions(df,responder=responder,use_docs=12)  # update df with new column
 
 # Save the updated DataFrame to a new Excel file
