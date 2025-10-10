@@ -56,7 +56,8 @@ def query_frag_api(prompt, base_url="http://change.dh.unibe.ch", n_results=5):
         response = requests.post(
             api_url,
             json=payload,
-            headers=headers
+            headers=headers,
+            timeout=3600 # set a very long timeout because requests can be quite long to process
         )
         
         # Raise an exception for bad status codes
