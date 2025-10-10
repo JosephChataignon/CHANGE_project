@@ -68,8 +68,9 @@ def validate_questions(df, responder='frag_api', use_docs=0):
 
 # Run the validation
 df = load_test_batterie()
-for responder in ['deepseekR1']: # can use ['frag_api', 'gpt5', 'deepseekR1']
-    df = validate_questions(df,responder=responder,use_docs=5)  # update df with new column
+# In the end we use all with FRAG. Model has to be changed in FRAG config, not through API
+for responder in ['frag_api']: # can use ['frag_api', 'gpt5', 'deepseekR1']
+    df = validate_questions(df,responder=responder,use_docs=12)  # update df with new column
 
 # Save the updated DataFrame to a new Excel file
 output_file = 'Testbatterie_FRAG_Rel&Val_with_LLM_response.xlsx'

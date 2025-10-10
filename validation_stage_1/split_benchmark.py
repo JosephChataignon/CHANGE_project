@@ -1,7 +1,11 @@
 import pandas as pd
 from openpyxl import load_workbook
 
-
+"""
+Abandoned script; 
+I thought we'd use multiple spreadsheets, one per expert, to gather evaluations,
+but in the end we'll use a handmade MS Forms instead.
+"""
 
 def split_for_experts(df, experts):
     ''' Splits the dataframe into multiple dataframes, one for each expert.
