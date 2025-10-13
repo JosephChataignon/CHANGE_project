@@ -50,7 +50,7 @@ def validate_questions(df, responder='frag_api', use_docs=0):
 
         # Query the API with the question
         if responder == 'frag_api':
-            api_response = query_frag_api(frage)
+            api_response = query_frag_api(frage, n_results=use_docs)
             response_text = api_response.get('response', str(api_response))
         else:
             if use_docs:
