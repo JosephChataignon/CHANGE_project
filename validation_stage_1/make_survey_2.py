@@ -180,12 +180,12 @@ def create_LSS_template(template_file="limesurvey_survey_example.lss", output_fi
     print(f"LSS template created at {output_file}")
     print("Ready for you to add:")
     print("  - Answers in <answers><rows>")
-    print("  - Answer localizations in <answer_l10ns><rows>")
+    print("  - Answer localizations in <answer_l10n><rows>")
     print("  - Groups in <groups><rows>")
-    print("  - Group localizations in <group_l10ns><rows>")
+    print("  - Group localizations in <group_l10n><rows>")
     print("  - Questions in <questions><rows>")
     print("  - Subquestions in <subquestions><rows>")
-    print("  - Question localizations in <question_l10ns><rows>")
+    print("  - Question localizations in <question_l10n><rows>")
     
     return tree, root
 
@@ -208,50 +208,14 @@ def populate_survey(tree, root, data_frames, survey_id=None):
     first_df = next(iter(data_frames.values()))
     model_names = list(data_frames.keys())
     
-    # Step 1: Create answer scale (1-6)
-    populate_answers(root, survey_id)
-    
-    # Step 2: Create groups (Handlungsfeld + Aspekt combinations)
+    # Create groups (Handlungsfeld + Aspekt combinations)
     group_map = populate_groups(root, first_df, survey_id)
     
-    # Step 3: Create questions and subquestions
+    # Create questions and subquestions
     populate_questions_and_subquestions(root, first_df, model_names, data_frames, 
                                        group_map, survey_id)
     
     return tree, root
-
-def populate_answers(root, survey_id):
-    """Create 1-6 rating scale answers."""
-    answers_rows = root.find('.//answers/rows')
-    answer_l10ns_rows = root.find('.//answer_l10ns/rows')
-    
-    # Answer labels in German (6 to 1, where 6 is best)
-    answer_labels = [
-        "6 - Das ist eine ausgezeichnete Antwort",
-        "5",
-        "4",
-        "3",
-        "2",
-        "1 - Das ist eine sehr schlechte Antwort"
-    ]
-    
-    # Note: We use codes 1-6 but display them in reverse order (6 first)
-    for i in range(1, 7):
-        # Create answer structure (language-independent)
-        answer_row = ET.SubElement(answers_rows, 'row')
-        ET.SubElement(answer_row, 'aid').text = str(i)
-        ET.SubElement(answer_row, 'qid').text = '0'  # Generic, will be applied to all questions
-        ET.SubElement(answer_row, 'code').text = str(7 - i)  # Reverse: 6,5,4,3,2,1
-        ET.SubElement(answer_row, 'sortorder').text = str(i - 1)  # Display order: 0-5
-        ET.SubElement(answer_row, 'assessment_value').text = '0'
-        ET.SubElement(answer_row, 'scale_id').text = '0'
-        
-        # Create answer localization (language-dependent text)
-        answer_l10n_row = ET.SubElement(answer_l10ns_rows, 'row')
-        ET.SubElement(answer_l10n_row, 'id').text = str(i)
-        ET.SubElement(answer_l10n_row, 'aid').text = str(i)
-        ET.SubElement(answer_l10n_row, 'answer').text = answer_labels[i - 1]
-        ET.SubElement(answer_l10n_row, 'language').text = 'de'
 
 def populate_groups(root, df, survey_id):
     """
@@ -310,9 +274,30 @@ def populate_questions_and_subquestions(root, df, model_names, data_frames,
     subquestions_rows = root.find('.//subquestions/rows')
     question_l10ns_rows = root.find('.//question_l10ns/rows')
     question_attributes_rows = root.find('.//question_attributes/rows')
+    answers_rows = root.find('.//answers/rows')
+    answer_l10ns_rows = root.find('.//answer_l10ns/rows')
     
     qid_counter = 1
     l10n_id_counter = 1
+    aid_counter = 1
+    
+    # Answer labels in German - just numbers (1 to 6)
+    answer_labels = ["1", "2", "3", "4", "5", "6"]
+    
+    # Scale reminder to show after each response
+    scale_reminder = """
+<div style='background-color:#f0f8ff; border-left:4px solid #0066cc; padding:10px; margin:10px 0;'>
+<p><strong>Hinweis:</strong> Bitte bewerten Sie die Qualität der Antwort auf einer Skala von 1 bis 6.</p>
+<ul style='list-style-type:none; padding-left:0;'>
+<li><strong>1</strong> - Unzureichend</li>
+<li><strong>2</strong> - Mangelhaft</li>
+<li><strong>3</strong> - Befriedigend</li>
+<li><strong>4</strong> - Gut</li>
+<li><strong>5</strong> - Sehr gut</li>
+<li><strong>6</strong> - Ausgezeichnet</li>
+</ul>
+</div>
+"""
     
     for q_order, (idx, row) in enumerate(df.iterrows(), 1):
         frage_id = row['Frage_ID']
@@ -335,7 +320,7 @@ def populate_questions_and_subquestions(root, df, model_names, data_frames,
         ET.SubElement(question_row, 'title').text = frage_id
         ET.SubElement(question_row, 'preg')
         ET.SubElement(question_row, 'other').text = 'N'
-        ET.SubElement(question_row, 'mandatory').text = 'N'
+        ET.SubElement(question_row, 'mandatory').text = 'Y'  
         ET.SubElement(question_row, 'encrypted').text = 'N'
         ET.SubElement(question_row, 'question_order').text = str(q_order)
         ET.SubElement(question_row, 'scale_id').text = '0'
@@ -345,12 +330,32 @@ def populate_questions_and_subquestions(root, df, model_names, data_frames,
         ET.SubElement(question_row, 'modulename')
         ET.SubElement(question_row, 'same_script').text = '0'
         
+        # Create answers for this question (1-6 scale)
+        for i in range(1, 7):
+            answer_row = ET.SubElement(answers_rows, 'row')
+            ET.SubElement(answer_row, 'aid').text = str(aid_counter)
+            ET.SubElement(answer_row, 'qid').text = str(main_qid)  # Link to this question
+            ET.SubElement(answer_row, 'code').text = str(i)  # Order: 1,2,3,4,5,6
+            ET.SubElement(answer_row, 'sortorder').text = str(i - 1)
+            ET.SubElement(answer_row, 'assessment_value').text = '0'
+            ET.SubElement(answer_row, 'scale_id').text = '0'
+            
+            # Create answer localization - just numbers
+            answer_l10n_row = ET.SubElement(answer_l10ns_rows, 'row')
+            ET.SubElement(answer_l10n_row, 'id').text = str(aid_counter)
+            ET.SubElement(answer_l10n_row, 'aid').text = str(aid_counter)
+            ET.SubElement(answer_l10n_row, 'answer').text = answer_labels[i - 1]
+            ET.SubElement(answer_l10n_row, 'language').text = 'de'
+            
+            aid_counter += 1
+        
         # Create question localization
         question_l10n_row = ET.SubElement(question_l10ns_rows, 'row')
         ET.SubElement(question_l10n_row, 'id').text = str(l10n_id_counter)
         l10n_id_counter += 1
         ET.SubElement(question_l10n_row, 'qid').text = str(main_qid)
-        # Format question with metadata
+        
+        # Format question with just metadata and question text
         full_question = f"<p><strong>{frage_id}</strong> ({komplexitaet})</p>\n<p>{frage}</p>"
         ET.SubElement(question_l10n_row, 'question').text = full_question
         ET.SubElement(question_l10n_row, 'help')
@@ -377,7 +382,7 @@ def populate_questions_and_subquestions(root, df, model_names, data_frames,
             ET.SubElement(subquestion_row, 'title').text = f'SQ{model_idx + 1:03d}'
             ET.SubElement(subquestion_row, 'preg')
             ET.SubElement(subquestion_row, 'other').text = 'N'
-            ET.SubElement(subquestion_row, 'mandatory')
+            ET.SubElement(subquestion_row, 'mandatory')  # Empty for subquestions
             ET.SubElement(subquestion_row, 'encrypted').text = 'N'
             ET.SubElement(subquestion_row, 'question_order').text = str(model_idx + 1)
             ET.SubElement(subquestion_row, 'scale_id').text = '0'
@@ -387,13 +392,14 @@ def populate_questions_and_subquestions(root, df, model_names, data_frames,
             ET.SubElement(subquestion_row, 'modulename')
             ET.SubElement(subquestion_row, 'same_script').text = '0'
             
-            # Create subquestion localization with model name and response
+            # Create subquestion localization with response text AND scale reminder
             subquestion_l10n_row = ET.SubElement(question_l10ns_rows, 'row')
             ET.SubElement(subquestion_l10n_row, 'id').text = str(l10n_id_counter)
             l10n_id_counter += 1
             ET.SubElement(subquestion_l10n_row, 'qid').text = str(sub_qid)
-            # Display model name as subquestion label, response will be shown as help text
-            ET.SubElement(subquestion_l10n_row, 'question').text = response_text
+            # Display response text followed by scale reminder
+            subquestion_with_reminder = f"{response_text}\n{scale_reminder}"
+            ET.SubElement(subquestion_l10n_row, 'question').text = subquestion_with_reminder
             ET.SubElement(subquestion_l10n_row, 'help')
             ET.SubElement(subquestion_l10n_row, 'script')
             ET.SubElement(subquestion_l10n_row, 'language').text = 'de'
@@ -405,12 +411,26 @@ def populate_questions_and_subquestions(root, df, model_names, data_frames,
         ET.SubElement(attr_row1, 'value')
         ET.SubElement(attr_row1, 'language')
         
-        # Random order for models
+        # Hide "no answer" option
         attr_row2 = ET.SubElement(question_attributes_rows, 'row')
         ET.SubElement(attr_row2, 'qid').text = str(main_qid)
-        ET.SubElement(attr_row2, 'attribute').text = 'random_order'
+        ET.SubElement(attr_row2, 'attribute').text = 'hide_tip'
         ET.SubElement(attr_row2, 'value').text = '1'
         ET.SubElement(attr_row2, 'language')
+        
+        # Random order for models
+        attr_row3 = ET.SubElement(question_attributes_rows, 'row')
+        ET.SubElement(attr_row3, 'qid').text = str(main_qid)
+        ET.SubElement(attr_row3, 'attribute').text = 'random_order'
+        ET.SubElement(attr_row3, 'value').text = '1'
+        ET.SubElement(attr_row3, 'language')
+        
+        # Set answer width to 80% to make question column wider
+        attr_row4 = ET.SubElement(question_attributes_rows, 'row')
+        ET.SubElement(attr_row4, 'qid').text = str(main_qid)
+        ET.SubElement(attr_row4, 'attribute').text = 'answer_width'
+        ET.SubElement(attr_row4, 'value').text = '80'
+        ET.SubElement(attr_row4, 'language')
 
 def create_complete_survey(template_file="limesurvey_survey_example.lss", 
                           output_file='llm_evaluation_survey.lss'):
