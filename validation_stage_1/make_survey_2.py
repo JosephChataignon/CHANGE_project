@@ -1,6 +1,98 @@
 import os
 import pandas as pd
 import xml.etree.ElementTree as ET
+import re
+
+def markdown_to_html(text):
+    """
+    Convert markdown formatting to HTML-style formatting (str to str)
+    Supports:
+    - Titles: # text → <h1>text</h1>, ## text → <h2>text</h2>, etc.
+    - Bold text: **text** → <strong>text</strong>
+    - Italic text: *text* or _text_ → <em>text</em>
+    - Underlined text: __text__ → <u>text</u>
+    - Unordered lists: * item or - item → <ul><li>item</li></ul>
+    - Single line breaks: \n → <br>
+    - Paragraphs: double line breaks → <p>text</p> tags
+    """
+    if not text or not isinstance(text, str):
+        return text
+    
+    # Normalize line breaks
+    text = text.replace('\r\n', '\n')
+    
+    # Convert headers (must be done line by line before paragraph processing)
+    # Match headers at the beginning of a line: # Title → <h1>Title</h1>
+    text = re.sub(r'^######\s+(.+)$', r'<h6>\1</h6>', text, flags=re.MULTILINE)
+    text = re.sub(r'^#####\s+(.+)$', r'<h5>\1</h5>', text, flags=re.MULTILINE)
+    text = re.sub(r'^####\s+(.+)$', r'<h4>\1</h4>', text, flags=re.MULTILINE)
+    text = re.sub(r'^###\s+(.+)$', r'<h3>\1</h3>', text, flags=re.MULTILINE)
+    text = re.sub(r'^##\s+(.+)$', r'<h2>\1</h2>', text, flags=re.MULTILINE)
+    text = re.sub(r'^#\s+(.+)$', r'<h1>\1</h1>', text, flags=re.MULTILINE)
+    
+    # Convert bold text: **text** → <strong>text</strong>
+    text = re.sub(r'\*\*(.+?)\*\*', r'<strong>\1</strong>', text)
+    # Convert underlined text: __text__ → <u>text</u> (must be done before italic)
+    text = re.sub(r'__(.+?)__', r'<u>\1</u>', text)
+    # Convert italic text: *text* or _text_ → <em>text</em>
+    text = re.sub(r'\*(.+?)\*', r'<em>\1</em>', text)
+    text = re.sub(r'_(.+?)_', r'<em>\1</em>', text)
+    
+    # Convert unordered lists: detect lines starting with * or - and group them
+    lines = text.split('\n')
+    processed_lines = []
+    in_list = False
+    for line in lines:
+        # Check if line is a list item (starts with * or - followed by space)
+        if re.match(r'^[\*\-]\s+(.+)$', line):
+            list_content = re.match(r'^[\*\-]\s+(.+)$', line).group(1)
+            if not in_list:
+                processed_lines.append('<ul>')
+                in_list = True
+            processed_lines.append(f'<li>{list_content}</li>')
+        else:
+            if in_list:
+                processed_lines.append('</ul>')
+                in_list = False
+            processed_lines.append(line)
+    # Close list if we ended while in one
+    if in_list:
+        processed_lines.append('</ul>')
+    text = '\n'.join(processed_lines)
+    
+    # Convert single line breaks to <br>, but not around block-level elements
+    # Split into lines and process each, checking context
+    lines = text.split('\n')
+    result_lines = []
+    block_tags = ['<ul>', '</ul>', '<ol>', '</ol>', '<li>', '</li>', 
+                  '<h1>', '</h1>', '<h2>', '</h2>', '<h3>', '</h3>', 
+                  '<h4>', '</h4>', '<h5>', '</h5>', '<h6>', '</h6>', '<p>', '</p>']
+    
+    for i, line in enumerate(lines):
+        result_lines.append(line)
+        # Check if we should add <br> after this line
+        if i < len(lines) - 1:  # Not the last line
+            # Don't add <br> if current line ends with a block tag
+            ends_with_block = any(line.rstrip().endswith(tag) for tag in block_tags)
+            # Don't add <br> if next line starts with a block tag
+            next_starts_with_block = any(lines[i + 1].lstrip().startswith(tag) for tag in block_tags)
+            # Don't add <br> if next line is empty (paragraph break)
+            next_is_empty = lines[i + 1].strip() == ''
+            
+            if not (ends_with_block or next_starts_with_block or next_is_empty):
+                result_lines.append('<br>')
+    
+    text = '\n'.join(result_lines)
+    
+    # Convert paragraphs: split by double line breaks and wrap each paragraph in <p> tags
+    # Split by double line breaks (paragraph separators)
+    paragraphs = text.split('\n\n')
+    # Wrap each paragraph in <p> tags
+    paragraphs = [f'<p>{p.strip()}</p>' for p in paragraphs if p.strip()]
+    # Join paragraphs
+    text = '\n'.join(paragraphs)
+    
+    return text
 
 def get_files():
     prefix = "Testbatterie_FRAG_Rel&Val_with_LLM_response_"
@@ -34,6 +126,7 @@ def load_files():
     for filename, model_name in files:
         df = pd.read_excel(filename)
         df['frag_api_response'] = df['frag_api_response'].apply(remove_thinking)
+        df['frag_api_response'] = df['frag_api_response'].apply(markdown_to_html)
         data_frames[model_name] = df
     return data_frames
 
