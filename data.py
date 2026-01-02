@@ -3,6 +3,7 @@
 Helper file to hide the mess of getting data from various sources
 """
 import os, logging, random, unicodedata
+from pathlib import Path
 from datasets import load_dataset, Dataset, DatasetDict
 from collections import defaultdict
 from nltk.tokenize.punkt import PunktSentenceTokenizer
@@ -103,7 +104,10 @@ def get_CHANGE_data_for_sentences(data_type, data_storage):
 
     if data_type.lower() == 'education':
         # find paths of all files
+        extensions = ['txt']
         data_dir = os.path.join(data_storage, 'Projekt_Change_LLM/Eduscience_data')
+        data_files = get_file_paths(data_dir,extensions)
+        logging.info(f'Loading dataset education_sample, searching from root:{data_dir}, found {len(data_files)} files of type {extensions}')
         # make test/train split - do we actually need it ?
         train_files,test_files = '',''
         # clean the text ? manage footnotes ?
@@ -145,17 +149,45 @@ def get_CHANGE_data_for_sentences(data_type, data_storage):
             "dev": dev_dataset,
             "test": test_dataset
         })
+
+    elif data_type.lower() == 'education_sample_experimental':
+        data_dir = os.path.join(data_storage, 'Projekt_Change_LLM/Preprocessed_Eduscience_data/sample_clean')
+        data_files = get_file_paths(data_dir, ['txt'])
+        logging.info(f'Loading dataset education_sample_experimental from root:{data_dir}, found {len(data_files)} txt files')
+
+        raw_dataset = Dataset.from_list([
+            {"text": Path(file_path).read_text(encoding='utf-8'), "file_name": Path(file_path).name}
+            for file_path in data_files
+        ])
+        
+        sentence_dataset = raw_dataset.map(
+            segment_documents,
+            batched=True,
+            with_indices=True,
+            remove_columns=raw_dataset.column_names,
+        )
+
+        triplets = create_triplets(sentence_dataset)
+
+        train_split = triplets.train_test_split(test_size=0.2, seed=42)
+        dev_test_split = train_split["test"].train_test_split(test_size=0.5, seed=42)
+        return DatasetDict({
+            "train": train_split["train"],
+            "dev": dev_test_split["train"],
+            "test": dev_test_split["test"]
+        })
         
 
-def segment_documents(examples):
+def segment_documents(examples, indices=None):
     all_sentences = []
     doc_ids = []
     tokenizer = PunktSentenceTokenizer()
-    for i, text in enumerate(examples["text"]):
+    # if indices is provided (map with with_indices=True), use it to keep doc_ids stable across batches
+    doc_labels = indices if indices is not None else range(len(examples["text"]))
+    for text, doc_label in zip(examples["text"], doc_labels):
         sentences = tokenizer.tokenize(text)
         all_sentences.extend(sentences)
-        doc_ids.extend([i] * len(sentences))
-    
+        doc_ids.extend([doc_label] * len(sentences))
     return {"sentence": all_sentences, "doc_id": doc_ids}
 
 def create_triplets(sentence_dataset):
