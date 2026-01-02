@@ -106,87 +106,46 @@ def get_CHANGE_data_for_sentences(data_type, data_storage):
         # find paths of all files
         extensions = ['txt']
         data_dir = os.path.join(data_storage, 'Projekt_Change_LLM/Eduscience_data')
-        data_files = get_file_paths(data_dir,extensions)
-        logging.info(f'Loading dataset education_sample, searching from root:{data_dir}, found {len(data_files)} files of type {extensions}')
-        # make test/train split - do we actually need it ?
-        train_files,test_files = '',''
-        # clean the text ? manage footnotes ?
-        
-        # chunk here?
-        
-        # load and return ?
-        return load_dataset("text", data_files={"train":train_files, "test":test_files})
-
     elif data_type.lower() == 'education_sample':
-        # find paths of all files
+        extensions = ['txt']
         data_dir = os.path.join(data_storage, 'Projekt_Change_LLM/Preprocessed_Eduscience_data/sample_clean')
-        data_files = get_file_paths(data_dir,['txt'])
-        logging.info(f'Loading dataset education_sample, searching from root:{data_dir}, found {len(data_files)} txt files')
-        
-        texts = []
-        for file_path in data_files:
-            with open(file_path, 'r', encoding='utf-8') as f:
-                text = f.read()
-                texts.append({"text": text, "file_name": os.path.basename(file_path)})
-        
-        # Segment documents into sentences
-        dataset = Dataset.from_dict({
-            "text": [text["text"] for text in texts], 
-            "file_name": [text["file_name"] for text in texts]
-        })
-        sentence_dataset = dataset.map(
-            segment_documents, 
-            batched=True, 
-            with_indices=True,
-            remove_columns=dataset.column_names
-        )
-        logging.info(f'Dataset columns: {sentence_dataset.column_names}')
-        # Create triplets
-        triplets = create_triplets(sentence_dataset)
+    
+    data_files = get_file_paths(data_dir, extensions)
+    logging.info(f'Loading dataset {data_type} from root:{data_dir}, found {len(data_files)} txt files')
+    raw_dataset = Dataset.from_list([{
+            "text": Path(file_path).read_text(encoding='utf-8'), 
+            "file_name": Path(file_path).name
+        } for file_path in data_files
+    ])
+    
+    # Clean documents here ? manage footnotes ?
+    
+    # Chunk documents into sentences
+    sentence_dataset = raw_dataset.map(
+        segment_documents,
+        batched=True,
+        with_indices=True,
+        remove_columns=raw_dataset.column_names,
+    )
 
-        train_split = triplets.train_test_split(test_size=0.2, seed=42)
-        dev_test_split = train_split["test"].train_test_split(test_size=0.5, seed=42)
-        return DatasetDict({
-            "train": train_split["train"],
-            "dev": dev_test_split["train"],
-            "test": dev_test_split["test"]
-        })
+    triplets = create_triplets(sentence_dataset)
 
-    elif data_type.lower() == 'education_sample_experimental':
-        data_dir = os.path.join(data_storage, 'Projekt_Change_LLM/Preprocessed_Eduscience_data/sample_clean')
-        data_files = get_file_paths(data_dir, ['txt'])
-        logging.info(f'Loading dataset education_sample_experimental from root:{data_dir}, found {len(data_files)} txt files')
-
-        raw_dataset = Dataset.from_list([
-            {"text": Path(file_path).read_text(encoding='utf-8'), "file_name": Path(file_path).name}
-            for file_path in data_files
-        ])
-        
-        sentence_dataset = raw_dataset.map(
-            segment_documents,
-            batched=True,
-            with_indices=True,
-            remove_columns=raw_dataset.column_names,
-        )
-        logging.info(f'Dataset columns: {sentence_dataset.column_names}')
-
-        triplets = create_triplets(sentence_dataset)
-
-        train_split = triplets.train_test_split(test_size=0.2, seed=42)
-        dev_test_split = train_split["test"].train_test_split(test_size=0.5, seed=42)
-        return DatasetDict({
-            "train": train_split["train"],
-            "dev": dev_test_split["train"],
-            "test": dev_test_split["test"]
-        })
+    train_split = triplets.train_test_split(test_size=0.2, seed=42)
+    dev_test_split = train_split["test"].train_test_split(test_size=0.5, seed=42)
+    return DatasetDict({
+        "train": train_split["train"],
+        "dev": dev_test_split["train"],
+        "test": dev_test_split["test"]
+    })
         
 
 def segment_documents(examples, indices=None):
     all_sentences = []
     doc_ids = []
     tokenizer = PunktSentenceTokenizer()
-    # if indices is provided (map with with_indices=True), use it to keep doc_ids stable across batches
-    doc_labels = indices if indices is not None else range(len(examples["text"]))
+    # Prefer source file_name as stable doc_id; fall back to provided indices, then to position
+    file_names = examples.get("file_name")
+    doc_labels = file_names if file_names is not None else (indices if indices is not None else range(len(examples["text"])))
     for text, doc_label in zip(examples["text"], doc_labels):
         sentences = tokenizer.tokenize(text)
         all_sentences.extend(sentences)
