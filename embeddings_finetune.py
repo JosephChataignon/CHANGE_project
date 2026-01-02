@@ -66,7 +66,7 @@ logging.info("Setup finished, starting script\n\n")
 ############################### LOADING MODEL, TOKENIZER AND DATA ###############################
 
 # get data files ("education" or "education_sample" ...)
-data_set = 'education_sample_experimental'
+data_set = 'education_sample'
 
 # Chose model (examples: "Lajavaness/bilingual-embedding-large", "sentence-transformers/all-mpnet-base-v2"...)
 model_name = "sentence-transformers/all-mpnet-base-v2"
