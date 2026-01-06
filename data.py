@@ -3,6 +3,7 @@
 Helper file to hide the mess of getting data from various sources
 """
 import os, logging, random, unicodedata
+from tqdm import tqdm
 from pathlib import Path
 from datasets import load_dataset, Dataset, DatasetDict
 from collections import defaultdict
@@ -121,15 +122,17 @@ def get_CHANGE_data_for_sentences(data_type, data_storage):
     # Clean documents here ? manage footnotes ?
     
     # Chunk documents into sentences
+    logging.info('Chunking documents into sentences')
     sentence_dataset = raw_dataset.map(
         segment_documents,
         batched=True,
         with_indices=True,
         remove_columns=raw_dataset.column_names,
     )
-
+    logging.info('Dataset chunked, now creating triplets from sentences')
     triplets = create_triplets(sentence_dataset)
 
+    logging.info(f'Triplet dataset created with {len(triplets)} triplets, now splitting into train/dev/test')
     train_split = triplets.train_test_split(test_size=0.2, seed=42)
     dev_test_split = train_split["test"].train_test_split(test_size=0.5, seed=42)
     return DatasetDict({
@@ -157,28 +160,40 @@ def create_triplets(sentence_dataset):
     doc_ids = sentence_dataset["doc_id"]
     triplets = []
 
-    # Strategy: Sentences from the same document are positive pairs
-    # Sentences from different documents are negative pairs
-    for i in range(len(sentences)):
-        anchor = sentences[i]
-        anchor_doc_id = doc_ids[i]
+    doc_indices = defaultdict(list) # format doc_id: [idx1, idx2, ...]
+    for idx, doc_id in enumerate(doc_ids):
+        doc_indices[doc_id].append(idx)
 
-        # Find positive example (from the same document)
-        pos_indices = [j for j in range(len(sentences)) if doc_ids[j] == anchor_doc_id and j != i]
-        if pos_indices:
-            pos_idx = random.choice(pos_indices)
-            positive = sentences[pos_idx]
+    # Strategy: sample one positive from the same doc, one negative from a different doc.
+    for i in tqdm(range(len(sentences)), desc="Building triplets"):
+        current_doc_indices = doc_indices[doc_ids[i]] # indices of other samples from the same doc
 
-            # Find negative example (from a different document)
-            neg_indices = [j for j in range(len(sentences)) if doc_ids[j] != anchor_doc_id]
-            if neg_indices:
-                neg_idx = random.choice(neg_indices)
-                negative = sentences[neg_idx]
+        # if doc has only one sample, skip
+        if len(current_doc_indices) < 2: 
+            continue
 
-                triplets.append({
-                    "anchor": anchor,
-                    "positive": positive,
-                    "negative": negative
-                })
+        # Positive: any index from same doc except itself
+        while True:
+            pos_idx = random.choice(current_doc_indices)
+            if pos_idx != i:
+                break
+        positive = sentences[pos_idx]
+
+        # Negative: rejection sample across all sentences until doc differs (very fast when many docs)
+        neg_idx = None
+        for _ in range(10):  # cap retries to avoid rare pathological cases
+            candidate = random.choice(range(len(sentences)))
+            if doc_ids[candidate] != doc_ids[i]:
+                neg_idx = candidate
+                break
+        if neg_idx is None:
+            continue  # for very unlucky cases
+        negative = sentences[neg_idx]
+        
+        triplets.append({
+            "anchor": sentences[i],
+            "positive": positive,
+            "negative": negative
+        })
 
     return Dataset.from_list(triplets)
