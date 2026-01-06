@@ -18,8 +18,9 @@ from sentence_transformers.training_args import BatchSamplers
 from sentence_transformers.evaluation import EmbeddingSimilarityEvaluator, TripletEvaluator
 from trl import SFTTrainer, DataCollatorForCompletionOnlyLM
 
-import os, sys, copy, logging, random
+import os, sys, copy, logging, random, time
 import nltk
+from pathlib import Path
 from datetime import datetime, timedelta
 from tqdm import tqdm
 from dotenv import load_dotenv, dotenv_values
@@ -50,7 +51,8 @@ transformers_logger = transformers.logging.get_logger()
 setup_logging(config, root_logger, transformers_logger)
 
 ## Setup CUDA
-dist.init_process_group(backend='nccl')
+# Increase timeout to cover long CPU preprocessing before ranks sync.
+dist.init_process_group(backend='nccl', timeout=timedelta(hours=2))
 local_rank = int(os.environ["LOCAL_RANK"])
 torch.cuda.set_device(local_rank)
 
@@ -92,12 +94,20 @@ os.makedirs(processed_dataset_dir, exist_ok=True)
 # Build the dataset only once (rank 0) to avoid concurrent HF cache writes that can corrupt the
 # arrow files when multiple torchrun workers process the same data simultaneously.
 dataset_cache_file = os.path.join(processed_dataset_dir, 'dataset_dict.json')
+ready_flag = os.path.join(processed_dataset_dir, '_READY')
 if dist.get_rank() == 0:
     if not os.path.exists(dataset_cache_file):
         dataset = get_CHANGE_data_for_sentences(data_set, config['DATA_STORAGE'])
         dataset.save_to_disk(processed_dataset_dir)
+        Path(ready_flag).touch()
     else:
         logging.info(f'Found cached dataset at {processed_dataset_dir}, reusing it')
+        Path(ready_flag).touch()
+
+# Non-zero ranks wait (filesystem poll) until rank 0 finishes writing.
+if dist.get_rank() != 0:
+    while not os.path.exists(ready_flag):
+        time.sleep(5)
 
 # ensure all ranks wait until the dataset is available on disk
 dist.barrier()
