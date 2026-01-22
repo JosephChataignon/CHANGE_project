@@ -2,7 +2,7 @@
 """
 Helper file to hide the mess of getting data from various sources
 """
-import os, logging, random, unicodedata
+import os, logging, random, unicodedata, math
 from tqdm import tqdm
 from pathlib import Path
 from datasets import load_dataset, Dataset, DatasetDict
@@ -155,45 +155,66 @@ def segment_documents(examples, indices=None):
         doc_ids.extend([doc_label] * len(sentences))
     return {"sentence": all_sentences, "doc_id": doc_ids}
 
-def create_triplets(sentence_dataset):
+def create_triplets(sentence_dataset, sample_scale=0.3, min_per_doc=10):
+    ''' sample_scale: to regulate how many sentences per document are included in training, so the trianing
+     runs don't take forever.
+    min_per_doc: minimum number of sentences to sample per document
+    '''
     sentences = sentence_dataset["sentence"]
     doc_ids = sentence_dataset["doc_id"]
     triplets = []
 
-    doc_indices = defaultdict(list) # format doc_id: [idx1, idx2, ...]
+    # Pass 1: build doc -> indices map and decide sampled indices per doc
+    doc_indices = defaultdict(list) # format doc_id -> list of sentence indices
     for idx, doc_id in enumerate(doc_ids):
         doc_indices[doc_id].append(idx)
 
-    # Strategy: sample one positive from the same doc, one negative from a different doc.
-    for i in tqdm(range(len(sentences)), desc="Building triplets"):
-        current_doc_indices = doc_indices[doc_ids[i]] # indices of other samples from the same doc
+    sampled_by_doc = {}
+    available_docs = []  # docs with >=2 sampled sentences (needed for positives)
+    total_sentences = len(sentences)
+    sampled_sentences = 0
+    for doc_id, indices in doc_indices.items():
+        # quota of sentences to sample from this document
+        quota = max(min_per_doc, math.ceil(sample_scale * math.sqrt(len(indices))))
+        if len(indices) <= quota:
+            sampled = indices
+        else:
+            sampled = random.sample(indices, quota)
+        sampled_by_doc[doc_id] = sampled
+        sampled_sentences += len(sampled)
+        if len(sampled) >= 2:
+            available_docs.append(doc_id)
 
-        # if doc has only one sample, skip
-        if len(current_doc_indices) < 2: 
-            continue
+    logging.info(f"Sampling for triplets: kept {sampled_sentences} of {total_sentences} sentences (~{100*sampled_sentences/total_sentences:.2f}%).")
 
-        # Positive: any index from same doc except itself
-        while True:
-            pos_idx = random.choice(current_doc_indices)
-            if pos_idx != i:
-                break
-        positive = sentences[pos_idx]
+    # Build triplets from sampled pool only
+    for doc_id in tqdm(available_docs, desc="Building triplets"):
+        idxs = sampled_by_doc[doc_id]
+        for anchor_idx in idxs:
+            # pick positive from same doc, not the anchor
+            if len(idxs) < 2:
+                continue
+            while True:
+                pos_idx = random.choice(idxs)
+                if pos_idx != anchor_idx:
+                    break
+            positive = sentences[pos_idx]
 
-        # Negative: rejection sample across all sentences until doc differs (very fast when many docs)
-        neg_idx = None
-        for _ in range(10):  # cap retries to avoid rare pathological cases
-            candidate = random.choice(range(len(sentences)))
-            if doc_ids[candidate] != doc_ids[i]:
-                neg_idx = candidate
-                break
-        if neg_idx is None:
-            continue  # for very unlucky cases
-        negative = sentences[neg_idx]
-        
-        triplets.append({
-            "anchor": sentences[i],
-            "positive": positive,
-            "negative": negative
-        })
+            # pick negative from a different doc
+            neg_doc = None
+            for _ in range(10):
+                candidate_doc = random.choice(available_docs)
+                if candidate_doc != doc_id:
+                    neg_doc = candidate_doc
+                    break
+            if neg_doc is None:
+                continue
+            neg_idx = random.choice(sampled_by_doc[neg_doc])
+
+            triplets.append({
+                "anchor": sentences[anchor_idx],
+                "positive": positive,
+                "negative": sentences[neg_idx]
+            })
 
     return Dataset.from_list(triplets)
