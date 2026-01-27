@@ -175,7 +175,7 @@ def create_triplets(sentence_dataset, sample_scale=0.3, min_per_doc=10):
     sampled_sentences = 0
     for doc_id, indices in doc_indices.items():
         # quota of sentences to sample from this document
-        quota = max(min_per_doc, math.ceil(sample_scale * math.sqrt(len(indices))))
+        quota = min(min_per_doc, math.ceil(sample_scale * math.sqrt(len(indices))))
         if len(indices) <= quota:
             sampled = indices
         else:
