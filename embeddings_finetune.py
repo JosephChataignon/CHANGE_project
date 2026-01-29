@@ -96,13 +96,15 @@ os.makedirs(processed_dataset_dir, exist_ok=True)
 dataset_cache_file = os.path.join(processed_dataset_dir, 'dataset_dict.json')
 ready_flag = os.path.join(processed_dataset_dir, '_READY')
 if dist.get_rank() == 0:
-    if not os.path.exists(dataset_cache_file):
-        dataset = get_CHANGE_data_for_sentences(data_set, config['DATA_STORAGE'])
-        dataset.save_to_disk(processed_dataset_dir)
-        Path(ready_flag).touch()
-    else:
-        logging.info(f'Found cached dataset at {processed_dataset_dir}, reusing it')
-        Path(ready_flag).touch()
+    # commented out caching to always reprocess the data
+    # if not os.path.exists(dataset_cache_file):
+    dataset = get_CHANGE_data_for_sentences(data_set, config['DATA_STORAGE'])
+    dataset.save_to_disk(processed_dataset_dir)
+    Path(ready_flag).touch()
+    # 
+    # else:
+    #    logging.info(f'Found cached dataset at {processed_dataset_dir}, reusing it')
+    #    Path(ready_flag).touch()
 
 # Non-zero ranks wait (filesystem poll) until rank 0 finishes writing.
 if dist.get_rank() != 0:

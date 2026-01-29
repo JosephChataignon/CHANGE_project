@@ -155,7 +155,7 @@ def segment_documents(examples, indices=None):
         doc_ids.extend([doc_label] * len(sentences))
     return {"sentence": all_sentences, "doc_id": doc_ids}
 
-def create_triplets(sentence_dataset, sample_scale=0.3, min_per_doc=10):
+def create_triplets(sentence_dataset, sample_scale=300, min_per_doc=10):
     ''' sample_scale: to regulate how many sentences per document are included in training, so the trianing
      runs don't take forever.
     min_per_doc: minimum number of sentences to sample per document
@@ -175,7 +175,7 @@ def create_triplets(sentence_dataset, sample_scale=0.3, min_per_doc=10):
     sampled_sentences = 0
     for doc_id, indices in doc_indices.items():
         # quota of sentences to sample from this document
-        quota = min(min_per_doc, math.ceil(sample_scale * math.sqrt(len(indices))))
+        quota = max(min_per_doc, math.ceil(sample_scale * math.sqrt(len(indices))))
         if len(indices) <= quota:
             sampled = indices
         else:
