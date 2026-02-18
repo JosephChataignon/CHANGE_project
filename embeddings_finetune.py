@@ -68,7 +68,7 @@ logging.info("Setup finished, starting script\n\n")
 ############################### LOADING MODEL, TOKENIZER AND DATA ###############################
 
 # get data files ("education" or "education_sample" ...)
-data_set = 'education'
+data_set = 'education_sample'
 
 # Chose model (examples: "Lajavaness/bilingual-embedding-large", "sentence-transformers/all-mpnet-base-v2"...)
 model_name = "sentence-transformers/all-mpnet-base-v2"
@@ -141,7 +141,7 @@ dev_evaluator(model.module)
 # Run the training
 args = SentenceTransformerTrainingArguments(
     # Required parameter:
-    output_dir=os.path.join(config['SAVED_MODELS_DIR'],'embedding-finetune-test'),
+    output_dir=os.path.join(config['SAVED_MODELS_DIR'],f'checkpoint-{instance_name}'),
     # Optional training parameters:
     num_train_epochs=1,
     per_device_train_batch_size=8,

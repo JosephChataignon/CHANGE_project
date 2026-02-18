@@ -100,7 +100,24 @@ def load_substitutions(substitutions_file):
     return character_pairs
 
 
-def get_CHANGE_data_for_sentences(data_type, data_storage):
+def get_CHANGE_data_for_sentences(data_type, data_storage, 
+                                  segmentation_method={"method":"sentence", "chunk_size":1, "overlap":0}, 
+                                  sample_scale=1, min_triplets_per_doc=10):
+    """
+    Load and process documents for embeddings fine-tuning with sentence-level triplets.
+    
+    Parameters:
+    data_type : Type of dataset to load ('education' or 'education_sample')
+    data_storage : Root directory for data storage
+    segmentation_method : Method to segment documents, default "sentence"
+    chunk_size : int, default=1
+    overlap : int, default=0
+    sample_scale : Scaling factor for quota calculation. Higher values = more samples per document.
+    min_triplets_per_doc : Minimum number of triplets to sample per document.
+    
+    Returns:
+    DatasetDict : Dictionary with 'train', 'dev', 'test' splits containing triplets
+    """
     assert isinstance(data_storage, str) and len(data_storage) > 0, f"data_storage should be a non-empty string, got '{data_storage}'"
 
     if data_type.lower() == 'education':
@@ -113,28 +130,49 @@ def get_CHANGE_data_for_sentences(data_type, data_storage):
     
     data_files = get_file_paths(data_dir, extensions)
     logging.info(f'Loading dataset {data_type} from root:{data_dir}, found {len(data_files)} txt files')
-    raw_dataset = Dataset.from_list([{
-            "text": Path(file_path).read_text(encoding='utf-8'), 
-            "file_name": Path(file_path).name
-        } for file_path in data_files
-    ])
+    
+    # Need to add references (author, etc) from spreadsheet
     
     # Clean documents here ? manage footnotes ?
     
-    # Chunk documents into sentences
-    logging.info('Chunking documents into sentences')
-    sentence_dataset = raw_dataset.map(
-        segment_documents,
-        batched=True,
-        with_indices=True,
-        remove_columns=raw_dataset.column_names,
-    )
-    logging.info('Dataset chunked, now creating triplets from sentences')
-    triplets = create_triplets(sentence_dataset)
+    # New pipeline: process documents one by one
+    logging.info(f'Processing documents with method={segmentation_method}')
+    all_chunks_by_doc = {}  # doc_id -> list of chunks
+    sampled_pairs = []  # Collect sampled pairs as we process each document
+    total_pairs_generated = 0
+    
+    for file_path in tqdm(data_files, desc="Processing documents"):
+        # Read document
+        text = Path(file_path).read_text(encoding='utf-8')
+        doc_id = Path(file_path).name
+        
+        # Segment document into chunks
+        chunks = segment_document(text, doc_id, segmentation_method=segmentation_method)
+        if len(chunks) < 2:
+            logging.warning(f"Only {len(chunks)} chunks in {doc_id}, skipping")
+            continue
+        # Store chunks for later negative sampling
+        all_chunks_by_doc[doc_id] = chunks
+        
+        possible_pairs = len(chunks) * (len(chunks) - 1) // 2
+        quota = max(min_triplets_per_doc, math.ceil(sample_scale * math.sqrt(possible_pairs)))
+        # Create and sample positive pairs from this document
+        doc_pairs = create_pairs_from_document(chunks, doc_id, quota=quota)
+        sampled_pairs.extend(doc_pairs)
+        
+        # Track statistics
+        total_pairs_generated += possible_pairs
+    
+    logging.info(f'Sampled {len(sampled_pairs)} pairs from {total_pairs_generated} possible pairs ')
+    
+    # Add negatives to create triplets
+    triplets = add_negatives_to_pairs(sampled_pairs, all_chunks_by_doc)
 
     logging.info(f'Triplet dataset created with {len(triplets)} triplets, now splitting into train/dev/test')
     train_split = triplets.train_test_split(test_size=0.2, seed=42)
     dev_test_split = train_split["test"].train_test_split(test_size=0.5, seed=42)
+    logging.info(f"Final dataset sizes: train={len(train_split['train'])}, dev={len(dev_test_split['train'])}, test={len(dev_test_split['test'])}") 
+    
     return DatasetDict({
         "train": train_split["train"],
         "dev": dev_test_split["train"],
@@ -142,79 +180,93 @@ def get_CHANGE_data_for_sentences(data_type, data_storage):
     })
         
 
-def segment_documents(examples, indices=None):
-    all_sentences = []
-    doc_ids = []
-    tokenizer = PunktSentenceTokenizer()
-    # Prefer source file_name as stable doc_id; fall back to provided indices, then to position
-    file_names = examples.get("file_name")
-    doc_labels = file_names if file_names is not None else (indices if indices is not None else range(len(examples["text"])))
-    for text, doc_label in zip(examples["text"], doc_labels):
+def segment_document(text, doc_id, segmentation_method):
+    """
+    Segment a single document into chunks (sentences or groups of sentences).
+    returns a list of str : The text chunks from this document
+    """
+    method, chunk_size, overlap = segmentation_method["method"], segmentation_method["chunk_size"], segmentation_method["overlap"]
+    # Segment into base units (sentences)
+    if method == "sentence":
+        tokenizer = PunktSentenceTokenizer()
         sentences = tokenizer.tokenize(text)
-        all_sentences.extend(sentences)
-        doc_ids.extend([doc_label] * len(sentences))
-    return {"sentence": all_sentences, "doc_id": doc_ids}
+    else:
+        raise ValueError(f"Unsupported segmentation method: {method}")
+    
+    # If chunk_size is 1, return sentences as-is
+    if chunk_size == 1:
+        return sentences
+    
+    # Group sentences with sliding window
+    chunks = []
+    step = chunk_size - overlap
+    for i in range(0, len(sentences)-overlap, step):
+        chunk_end = min(i + chunk_size, len(sentences))
+        chunk = " ".join(sentences[i:chunk_end])
+        if len(chunk) > 0: chunks.append(chunk)    
+    return chunks
 
-def create_triplets(sentence_dataset, sample_scale=300, min_per_doc=10):
-    ''' sample_scale: to regulate how many sentences per document are included in training, so the trianing
-     runs don't take forever.
-    min_per_doc: minimum number of sentences to sample per document
-    '''
-    sentences = sentence_dataset["sentence"]
-    doc_ids = sentence_dataset["doc_id"]
+
+
+def create_pairs_from_document(chunks, doc_id, quota):
+    """
+    Create all possible positive pairs from chunks and immediately sample them.
+    Returns:
+    list of dict : Sampled pairs with keys 'anchor', 'positive', 'doc_id'
+    """
+    n = len(chunks)
+    total_possible_pairs = n * (n - 1) // 2
+        
+    all_pair_indices = [(i, j) for i in range(n) for j in range(i + 1, n)]
+    sampled_indices = random.sample(all_pair_indices, quota) if quota < total_possible_pairs else all_pair_indices
+    
+    sampled_pairs = []
+    for i, j in sampled_indices:
+        sampled_pairs.append({
+            "anchor": chunks[i],
+            "positive": chunks[j],
+            "doc_id": doc_id
+        })
+    return sampled_pairs
+
+
+
+def add_negatives_to_pairs(sampled_pairs, all_chunks_by_doc):
+    """
+    Add negative examples to pairs to create triplets.
+    
+    Parameters:
+    sampled_pairs : list of dict
+        Pairs with 'anchor', 'positive', 'doc_id' keys
+    all_chunks_by_doc : dict
+        Mapping from doc_id to list of chunks from that document
+    
+    Returns:
+    Dataset : HuggingFace Dataset with 'anchor', 'positive', 'negative' columns
+    """
     triplets = []
-
-    # Pass 1: build doc -> indices map and decide sampled indices per doc
-    doc_indices = defaultdict(list) # format doc_id -> list of sentence indices
-    for idx, doc_id in enumerate(doc_ids):
-        doc_indices[doc_id].append(idx)
-
-    sampled_by_doc = {}
-    available_docs = []  # docs with >=2 sampled sentences (needed for positives)
-    total_sentences = len(sentences)
-    sampled_sentences = 0
-    for doc_id, indices in doc_indices.items():
-        # quota of sentences to sample from this document
-        quota = max(min_per_doc, math.ceil(sample_scale * math.sqrt(len(indices))))
-        if len(indices) <= quota:
-            sampled = indices
-        else:
-            sampled = random.sample(indices, quota)
-        sampled_by_doc[doc_id] = sampled
-        sampled_sentences += len(sampled)
-        if len(sampled) >= 2:
-            available_docs.append(doc_id)
-
-    logging.info(f"Sampling for triplets: kept {sampled_sentences} of {total_sentences} sentences (~{100*sampled_sentences/total_sentences:.2f}%).")
-
-    # Build triplets from sampled pool only
-    for doc_id in tqdm(available_docs, desc="Building triplets"):
-        idxs = sampled_by_doc[doc_id]
-        for anchor_idx in idxs:
-            # pick positive from same doc, not the anchor
-            if len(idxs) < 2:
-                continue
-            while True:
-                pos_idx = random.choice(idxs)
-                if pos_idx != anchor_idx:
-                    break
-            positive = sentences[pos_idx]
-
-            # pick negative from a different doc
-            neg_doc = None
-            for _ in range(10):
-                candidate_doc = random.choice(available_docs)
-                if candidate_doc != doc_id:
-                    neg_doc = candidate_doc
-                    break
-            if neg_doc is None:
-                continue
-            neg_idx = random.choice(sampled_by_doc[neg_doc])
-
-            triplets.append({
-                "anchor": sentences[anchor_idx],
-                "positive": positive,
-                "negative": sentences[neg_idx]
-            })
-
+    available_docs = list(all_chunks_by_doc.keys())
+    
+    for pair in tqdm(sampled_pairs, desc="Adding negatives to create triplets"):
+        anchor_doc = pair["doc_id"]
+        
+        # Select a negative from a different document
+        neg_doc = None
+        for _ in range(10):
+            candidate_doc = random.choice(available_docs)
+            if candidate_doc != anchor_doc:
+                neg_doc = candidate_doc
+                break
+        if neg_doc is None: continue
+        
+        # Pick random chunk from negative document
+        negative_chunk = random.choice(all_chunks_by_doc[neg_doc])
+        
+        triplets.append({
+            "anchor": pair["anchor"],
+            "positive": pair["positive"],
+            "negative": negative_chunk
+        })
+    
     return Dataset.from_list(triplets)
+
