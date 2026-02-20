@@ -101,7 +101,7 @@ def load_substitutions(substitutions_file):
 
 
 def get_CHANGE_data_for_sentences(data_type, data_storage, 
-                                  segmentation_method={"method":"sentence", "chunk_size":1, "overlap":0}, 
+                                  segmentation_method={"method":"sentence", "chunk_size":12, "overlap":2}, 
                                   sample_scale=1, min_triplets_per_doc=10):
     """
     Load and process documents for embeddings fine-tuning with sentence-level triplets.
