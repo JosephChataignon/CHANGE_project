@@ -144,7 +144,7 @@ def get_CHANGE_data_for_sentences(data_type, data_storage,
     for file_path in tqdm(data_files, desc="Processing documents"):
         # Read document
         text = Path(file_path).read_text(encoding='utf-8')
-        doc_id = Path(file_path).name
+        doc_id = os.path.relpath(file_path, data_dir)
         
         # Segment document into chunks
         chunks = segment_document(text, doc_id, segmentation_method=segmentation_method)
