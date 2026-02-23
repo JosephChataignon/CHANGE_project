@@ -129,14 +129,26 @@ tensorboard_callback = get_tb_callback(config,instance_name)
 
 loss = losses.MultipleNegativesRankingLoss(model).to(torch.device(f'cuda:{local_rank}'))
 
-# Optional: Create an evaluator
+# full dev set evaluator (run only at start and end of training)
 dev_evaluator = TripletEvaluator(
     anchors=eval_dataset["anchor"],
     positives=eval_dataset["positive"],
     negatives=eval_dataset["negative"],
     name=data_set,
 )
+logging.info("Running initial evaluation on dev set")
 dev_evaluator(model.module)
+# Create a smaller evaluator for frequent evals
+eval_subset_size = 5000
+eval_subset = eval_dataset.shuffle(seed=42).select(range(min(eval_subset_size, len(eval_dataset))))
+logging.info(f"Eval subset size: {len(eval_subset)} of {len(eval_dataset)}")
+partial_dev_evaluator = TripletEvaluator(
+    anchors=eval_subset["anchor"],
+    positives=eval_subset["positive"],
+    negatives=eval_subset["negative"],
+    name=f"{data_set}_subset",
+)
+logging.info("Initialized loss and evaluator")
 
 # Run the training
 args = SentenceTransformerTrainingArguments(
@@ -152,7 +164,7 @@ args = SentenceTransformerTrainingArguments(
     batch_sampler=BatchSamplers.NO_DUPLICATES,  # MultipleNegativesRankingLoss benefits from no duplicates
     # Optional tracking/debugging parameters:
     eval_strategy="steps",
-    eval_steps=100,
+    eval_steps=1000,
     save_strategy="steps",
     save_steps=100,
     save_total_limit=2,
@@ -165,9 +177,9 @@ trainer = SentenceTransformerTrainer(
     model=model.module,
     args=args,
     train_dataset=train_dataset,
-    eval_dataset=eval_dataset,
+    eval_dataset=eval_subset,
     loss=loss,
-    evaluator=dev_evaluator,
+    evaluator=partial_dev_evaluator,
 )
 
 logging.info(f"CUDA available: {torch.cuda.is_available()}")
@@ -197,3 +209,6 @@ logging.info(f"Time spent on training: {train_end_time - train_start_time}")
 # Save the fine-tuned model
 model.module.save_pretrained(f"{config['SAVED_MODELS_DIR']}/{instance_name}")
 logging.info(f"model saved at {config['SAVED_MODELS_DIR']}/{instance_name}")
+
+logging.info("Running final evaluation on dev set")
+dev_evaluator(model.module)
