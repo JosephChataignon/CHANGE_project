@@ -17,7 +17,7 @@ detect_environment() {
     if [[ -d /storage/homefs/jc23c442 ]] || [[ "$HOSTNAME" == "submit"* ]]; then
         echo "ubelix"
     # Check for lab server-specific environment variables or paths
-    elif [[ ("$HOSTNAME" == "dhserver03" && "$USER" == "joseph") || ("$HOSTNAME" == "srv" && "$USER" == "joseph") ]]; then 
+    elif [[ ("$HOSTNAME" == "dhserver03") || ("$HOSTNAME" == "srv" && "$USER" == "joseph") ]]; then 
         echo "dhserver"
     else
         echo "unknown"
@@ -45,7 +45,8 @@ case $ENVIRONMENT in
         ACCELERATE_CONFIG="accelerate_config_DHserver.yaml"
         ;;
     *)
-        echo "Accelerate_launch: unknown environment"
+        echo "Accelerate_launch: unknown environment: $ENVIRONMENT."
+        echo "Hostname: $HOSTNAME, User: $USER"
         exit 1
         ;;
 esac
