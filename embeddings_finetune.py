@@ -79,7 +79,7 @@ model.parallel_training = False
 
 
 # set name where the trained model will be saved
-instance_name = f"{model_name.replace('/','-')}_finetuned-on_{data_set}_{start_time}"
+instance_name = f"{model_name.replace('/','-')}_finetuned-on_{data_set}-scale{config['SAMPLE_SCALE']}_{start_time}"
 logging.info(f'Model loaded: {model_name}')
 logging.info(model)
 logging.info(f'Output (fine-tuned) model will be saved with the name: {instance_name}')
