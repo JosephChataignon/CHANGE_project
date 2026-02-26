@@ -98,7 +98,7 @@ ready_flag = os.path.join(processed_dataset_dir, '_READY')
 if dist.get_rank() == 0:
     # commented out caching to always reprocess the data
     # if not os.path.exists(dataset_cache_file):
-    dataset = get_CHANGE_data_for_sentences(data_set, config['DATA_STORAGE'], sample_scale=config['SAMPLE_SCALE'])
+    dataset = get_CHANGE_data_for_sentences(data_set, config['DATA_STORAGE'], sample_scale=int(config['SAMPLE_SCALE']))
     dataset.save_to_disk(processed_dataset_dir)
     Path(ready_flag).touch()
     # 
