@@ -6,7 +6,7 @@ Launcher file for the fine-tuning of embeddings models
 ################################ Imports ################################
 import torch
 import torch.distributed as dist
-from torch.nn.parallel import DistributedDataParallel
+#from torch.nn.parallel import DistributedDataParallel
 from torch.utils.data import DataLoader, IterableDataset, Dataset as TorchDataset
 from sklearn.model_selection import train_test_split
 
@@ -74,8 +74,8 @@ data_set = 'education'
 model_name = config['EMBEDDING_MODEL']
 
 model = SentenceTransformer(model_name, device=f'cuda:{local_rank}')
-model = DistributedDataParallel(model, device_ids=[local_rank],find_unused_parameters=True)
-model.parallel_training = False
+#model = DistributedDataParallel(model, device_ids=[local_rank],find_unused_parameters=True)
+#model.parallel_training = False
 
 
 # set name where the trained model will be saved
@@ -137,7 +137,7 @@ dev_evaluator = TripletEvaluator(
     name=data_set,
 )
 logging.info("Running initial evaluation on dev set")
-dev_evaluator(model.module)
+dev_evaluator(model)
 # Create a smaller evaluator for frequent evals
 eval_subset_size = 5000
 eval_subset = (eval_dataset.shuffle(seed=42, keep_in_memory=True).select(
@@ -176,7 +176,7 @@ args = SentenceTransformerTrainingArguments(
     dataloader_pin_memory=False,    # Disable pinned memory
 )
 trainer = SentenceTransformerTrainer(
-    model=model.module,
+    model=model,
     args=args,
     train_dataset=train_dataset,
     eval_dataset=eval_subset,
@@ -209,8 +209,8 @@ logging.info(f"Time spent until training starts: {train_start_time - start_time}
 logging.info(f"Time spent on training: {train_end_time - train_start_time}")
 
 # Save the fine-tuned model
-model.module.save_pretrained(f"{config['SAVED_MODELS_DIR']}/{instance_name}")
+model.save_pretrained(f"{config['SAVED_MODELS_DIR']}/{instance_name}")
 logging.info(f"model saved at {config['SAVED_MODELS_DIR']}/{instance_name}")
 
 logging.info("Running final evaluation on dev set")
-dev_evaluator(model.module)
+dev_evaluator(model)
