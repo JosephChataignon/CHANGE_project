@@ -86,6 +86,7 @@ if [[ "$fullscriptpath" == *"/embeddings_finetune.py" ]]; then
         --bind "$STORAGE_DIR":"$STORAGE_DIR" \
         ~/ubuntu_env.sif \
         torchrun --nproc_per_node=2  "$fullscriptpath"
+        exit $?
 else
     echo "Execution with Accelerate."
     apptainer exec --nv \
@@ -93,5 +94,6 @@ else
         --bind "$STORAGE_DIR":"$STORAGE_DIR" \
         ~/ubuntu_env.sif \
         accelerate launch --config_file "$CHANGE_PROJ_DIR/$ACCELERATE_CONFIG" "$fullscriptpath"
+        exit $?
 fi
 
