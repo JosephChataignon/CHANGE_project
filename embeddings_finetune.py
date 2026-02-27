@@ -56,6 +56,8 @@ dist.init_process_group(backend='nccl', timeout=timedelta(hours=2))
 local_rank = int(os.environ["LOCAL_RANK"])
 torch.cuda.set_device(local_rank)
 
+is_main_process = dist.get_rank() == 0
+
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 # logs CUDA info with DEBUG level
 display_CUDA_info(device)
@@ -135,9 +137,11 @@ dev_evaluator = TripletEvaluator(
     positives=eval_dataset["positive"],
     negatives=eval_dataset["negative"],
     name=data_set,
+    batch_size=8,
 )
-logging.info("Running initial evaluation on dev set")
-dev_evaluator(model)
+if is_main_process:
+    logging.info("Running initial evaluation on dev set")
+    dev_evaluator(model)
 # Create a smaller evaluator for frequent evals
 eval_subset_size = 5000
 eval_subset = (eval_dataset.shuffle(seed=42, keep_in_memory=True).select(
@@ -149,6 +153,7 @@ partial_dev_evaluator = TripletEvaluator(
     positives=eval_subset["positive"],
     negatives=eval_subset["negative"],
     name=f"{data_set}_subset",
+    batch_size=8,
 )
 logging.info("Initialized loss and evaluator")
 
@@ -212,5 +217,6 @@ logging.info(f"Time spent on training: {train_end_time - train_start_time}")
 model.save_pretrained(f"{config['SAVED_MODELS_DIR']}/{instance_name}")
 logging.info(f"model saved at {config['SAVED_MODELS_DIR']}/{instance_name}")
 
-logging.info("Running final evaluation on dev set")
-dev_evaluator(model)
+if is_main_process:
+    logging.info("Running final evaluation on dev set")
+    dev_evaluator(model)
