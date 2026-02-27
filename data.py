@@ -188,8 +188,7 @@ def segment_document(text, doc_id, segmentation_method):
     method, chunk_size, overlap = segmentation_method["method"], segmentation_method["chunk_size"], segmentation_method["overlap"]
     # Segment into base units (sentences)
     if method == "sentence":
-        tokenizer = PunktSentenceTokenizer()
-        sentences = tokenizer.tokenize(text)
+        sentences = _split_text_into_sentences(text)  # further split long sentences into smaller chunks
     else:
         raise ValueError(f"Unsupported segmentation method: {method}")
     
@@ -206,7 +205,19 @@ def segment_document(text, doc_id, segmentation_method):
         if len(chunk) > 0: chunks.append(chunk)    
     return chunks
 
-
+def _split_text_into_sentences(text):
+    tokenizer = PunktSentenceTokenizer()
+    sentences = tokenizer.tokenize(text)
+    max_sentence_chars = 150
+    capped_sentences = []
+    for sentence in sentences:
+        if len(sentence) <= max_sentence_chars:
+            capped_sentences.append(sentence)
+        else:
+            capped_sentences.extend(
+                [sentence[i:i+max_sentence_chars] for i in range(0, len(sentence), max_sentence_chars)]
+            )
+    return capped_sentences
 
 def create_pairs_from_document(chunks, doc_id, quota):
     """
