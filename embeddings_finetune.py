@@ -146,8 +146,8 @@ if is_main_process:
 dist.barrier()
 # Create a smaller evaluator for frequent evals
 eval_subset_size = 5000
-eval_subset = (eval_dataset.shuffle(seed=42, keep_in_memory=True).select(
-            range(min(eval_subset_size, len(eval_dataset))), keep_in_memory=True
+eval_subset = (eval_dataset.shuffle(seed=42).select(
+            range(min(eval_subset_size, len(eval_dataset)))
 ))
 logging.info(f"Eval subset size: {len(eval_subset)} of {len(eval_dataset)}")
 partial_dev_evaluator = TripletEvaluator(
