@@ -75,7 +75,7 @@ data_set = 'education'
 # Chose model (examples: "Lajavaness/bilingual-embedding-large", "sentence-transformers/all-mpnet-base-v2"...)
 model_name = config['EMBEDDING_MODEL']
 
-model = SentenceTransformer(model_name, device=f'cuda:{local_rank}')
+model = SentenceTransformer(model_name, device=f'cuda:{local_rank}', trust_remote_code=True)
 #model = DistributedDataParallel(model, device_ids=[local_rank],find_unused_parameters=True)
 #model.parallel_training = False
 
@@ -139,9 +139,11 @@ dev_evaluator = TripletEvaluator(
     name=data_set,
     batch_size=8,
 )
+dist.barrier()
 if is_main_process:
     logging.info("Running initial evaluation on dev set")
     dev_evaluator(model)
+dist.barrier()
 # Create a smaller evaluator for frequent evals
 eval_subset_size = 5000
 eval_subset = (eval_dataset.shuffle(seed=42, keep_in_memory=True).select(
@@ -214,9 +216,13 @@ logging.info(f"Time spent until training starts: {train_start_time - start_time}
 logging.info(f"Time spent on training: {train_end_time - train_start_time}")
 
 # Save the fine-tuned model
-model.save_pretrained(f"{config['SAVED_MODELS_DIR']}/{instance_name}")
-logging.info(f"model saved at {config['SAVED_MODELS_DIR']}/{instance_name}")
+dist.barrier()
+if is_main_process:
+    model.save_pretrained(f"{config['SAVED_MODELS_DIR']}/{instance_name}")
+    logging.info(f"model saved at {config['SAVED_MODELS_DIR']}/{instance_name}")
+dist.barrier()
 
 if is_main_process:
     logging.info("Running final evaluation on dev set")
     dev_evaluator(model)
+dist.barrier()
