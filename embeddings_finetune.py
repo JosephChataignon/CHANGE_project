@@ -90,7 +90,9 @@ display_CUDA_info(device)
 
 ## LOAD DATASET
 logging.info(f'Loading data set: {data_set}')
-processed_dataset_dir = os.path.join(config['DATA_STORAGE'], 'hf_cache', f'{data_set}_triplets')
+processed_dataset_dir = os.path.expanduser(
+    os.path.join('~', '.cache', 'huggingface', 'datasets', f'{data_set}_triplets')
+)
 os.makedirs(processed_dataset_dir, exist_ok=True)
 
 # Build the dataset only once (rank 0) to avoid concurrent HF cache writes that can corrupt the
