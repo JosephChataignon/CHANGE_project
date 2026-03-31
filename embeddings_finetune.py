@@ -76,6 +76,11 @@ data_set = 'education'
 model_name = config['EMBEDDING_MODEL']
 
 model = SentenceTransformer(model_name, device=f'cuda:{local_rank}', trust_remote_code=True)
+# Set a max sequence length to avoid blowing up VRAM use
+max_seq_length = 256
+model.max_seq_length = max_seq_length
+model.tokenizer.model_max_length = max_seq_length
+logging.info(f"Using max_seq_length={max_seq_length} for model and tokenizer truncation")
 #model = DistributedDataParallel(model, device_ids=[local_rank],find_unused_parameters=True)
 #model.parallel_training = False
 
