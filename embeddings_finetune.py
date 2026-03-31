@@ -168,8 +168,7 @@ if initial_eval_max_samples is not None and len(eval_dataset) > initial_eval_max
             f"Dev set has {len(eval_dataset)} triplets, limiting initial evaluation to "
             f"{initial_eval_max_samples} samples to reduce memory usage."
         )
-    limit = min(initial_eval_max_samples, len(eval_dataset))
-    dev_eval_dataset = eval_dataset.shuffle(seed=42).select(range(limit))
+    dev_eval_dataset = eval_dataset.shuffle(seed=42).select(range(initial_eval_max_samples))
 
 # full dev set evaluator (run only at start and end of training, main process only)
 dev_evaluator = None

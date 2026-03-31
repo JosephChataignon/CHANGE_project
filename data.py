@@ -268,14 +268,18 @@ def _unrank_pair(k, n):
     -----
     This avoids materializing the full list of combinations in memory.
     """
+    max_k = n * (n - 1) // 2 - 1
+    if k < 0 or k > max_k:
+        raise ValueError(f"Pair index {k} out of range for n={n}. Valid indices are 0 to {max_k}.")
+
     remaining = k
     for i in range(n - 1):
         count = n - i - 1
         if remaining < count:
             return i, i + 1 + remaining
         remaining -= count
-    max_k = n * (n - 1) // 2 - 1
-    raise AssertionError(f"Pair index {k} out of range for n={n}. Valid indices are 0 to {max_k}.")
+    # This should be unreachable thanks to the bounds check above.
+    raise ValueError(f"Could not unrank pair index {k} for n={n}.")
 
 
 
