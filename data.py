@@ -268,18 +268,16 @@ def _decode_pair_index(k, n):
     -----
     This avoids materializing the full list of combinations in memory.
     """
-    max_k = n * (n - 1) // 2 - 1
-    if k < 0 or k > max_k:
+    total_pairs = n * (n - 1) // 2
+    if k < 0 or k >= total_pairs:
+        max_k = total_pairs - 1
         raise ValueError(f"Pair index {k} out of range for n={n}. Valid indices are 0 to {max_k}.")
 
-    remaining = k
-    for i in range(n - 1):
-        count = n - i - 1
-        if remaining < count:
-            return i, i + 1 + remaining
-        remaining -= count
-    # This should be unreachable thanks to the bounds check above.
-    raise ValueError(f"Could not unrank pair index {k} for n={n}.")
+    # Closed-form inverse to avoid O(n) scanning.
+    i = math.floor((2 * n - 1 - math.sqrt((2 * n - 1) ** 2 - 8 * k)) / 2)
+    offset = i * (2 * n - i - 1) // 2
+    j = k - offset + i + 1
+    return i, j
 
 
 
