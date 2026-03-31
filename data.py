@@ -251,6 +251,21 @@ def create_pairs_from_document(chunks, doc_id, quota):
 def _unrank_pair(k, n):
     """
     Map a flat index k in [0, n*(n-1)//2) to a unique (i, j) with i < j < n.
+    
+    Parameters
+    ----------
+    k : int
+        Flat index representing the k-th combination of two elements.
+    n : int
+        Total number of elements to combine.
+
+    Returns
+    -------
+    tuple[int, int]
+        Pair indices (i, j) corresponding to the flat index.
+
+    Notes
+    -----
     This avoids materializing the full list of combinations in memory.
     """
     remaining = k
@@ -260,7 +275,7 @@ def _unrank_pair(k, n):
             return i, i + 1 + remaining
         remaining -= count
     max_k = n * (n - 1) // 2 - 1
-    raise ValueError(f"Pair index {k} out of range for n={n}. Valid indices are 0 to {max_k}.")
+    raise AssertionError(f"Pair index {k} out of range for n={n}. Valid indices are 0 to {max_k}.")
 
 
 

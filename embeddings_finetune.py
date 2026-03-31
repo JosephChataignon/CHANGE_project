@@ -80,6 +80,7 @@ else:
     except ValueError as exc:
         raise ValueError(f"INITIAL_EVAL_MAX_SAMPLES must be an integer, got '{raw_initial_eval_max}'") from exc
 if initial_eval_max_samples <= 0:
+    # Non-positive values explicitly disable the initial eval cap.
     initial_eval_max_samples = None
 
 raw_max_pairs_per_doc = config.get('MAX_PAIRS_PER_DOC')
@@ -91,6 +92,7 @@ else:
     except ValueError as exc:
         raise ValueError(f"MAX_PAIRS_PER_DOC must be an integer, got '{raw_max_pairs_per_doc}'") from exc
 if max_pairs_per_doc <= 0:
+    # Non-positive values explicitly disable the per-document cap.
     max_pairs_per_doc = None
 
 # Chose model (examples: "Lajavaness/bilingual-embedding-large", "sentence-transformers/all-mpnet-base-v2"...)
