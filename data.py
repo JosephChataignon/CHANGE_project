@@ -273,10 +273,12 @@ def _decode_pair_index(k, n):
         max_k = total_pairs - 1
         raise ValueError(f"Pair index {k} out of range for n={n}. Valid indices are 0 to {max_k}.")
 
-    # Closed-form inverse of the triangular number sequence
-    # (inverting k = i*(2n-i-1)/2 + offset) to avoid O(n) scanning.
+    # Closed-form inverse of the triangular number sequence:
+    # solves k = sum_{m=0}^{i-1}(n-1-m) + within_row for the row index i.
     i = math.floor((2 * n - 1 - math.sqrt((2 * n - 1) ** 2 - 8 * k)) / 2)
     offset = i * (2 * n - i - 1) // 2
+    # offset counts pairs before row i; (k - offset) is the position inside row i,
+    # whose first valid column index is i + 1 in the upper triangular grid.
     j = k - offset + i + 1
     return i, j
 
