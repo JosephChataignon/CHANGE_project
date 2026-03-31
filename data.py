@@ -259,7 +259,8 @@ def _unrank_pair(k, n):
         if remaining < count:
             return i, i + 1 + remaining
         remaining -= count
-    raise ValueError(f"Pair index {k} out of range for n={n}")
+    max_k = n * (n - 1) // 2 - 1
+    raise ValueError(f"Pair index {k} out of range for n={n}. Valid indices are 0 to {max_k}.")
 
 
 

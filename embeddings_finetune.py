@@ -72,7 +72,13 @@ logging.info("Setup finished, starting script\n\n")
 # get data files ("education" or "education_sample" ...)
 data_set = 'education'
 raw_initial_eval_max = config.get('INITIAL_EVAL_MAX_SAMPLES')
-initial_eval_max_samples = int(raw_initial_eval_max) if raw_initial_eval_max is not None else 5000
+if raw_initial_eval_max is None:
+    initial_eval_max_samples = 5000
+else:
+    try:
+        initial_eval_max_samples = int(raw_initial_eval_max)
+    except ValueError as exc:
+        raise ValueError(f"INITIAL_EVAL_MAX_SAMPLES must be an integer, got '{raw_initial_eval_max}'") from exc
 if initial_eval_max_samples <= 0:
     initial_eval_max_samples = None
 
@@ -80,7 +86,10 @@ raw_max_pairs_per_doc = config.get('MAX_PAIRS_PER_DOC')
 if raw_max_pairs_per_doc is None:
     max_pairs_per_doc = 5000
 else:
-    max_pairs_per_doc = int(raw_max_pairs_per_doc)
+    try:
+        max_pairs_per_doc = int(raw_max_pairs_per_doc)
+    except ValueError as exc:
+        raise ValueError(f"MAX_PAIRS_PER_DOC must be an integer, got '{raw_max_pairs_per_doc}'") from exc
 if max_pairs_per_doc <= 0:
     max_pairs_per_doc = None
 
