@@ -237,7 +237,7 @@ def create_pairs_from_document(chunks, doc_id, quota):
         pair_indices_iter = ((i, j) for i in range(n) for j in range(i + 1, n))
     else:
         flat_indices = random.sample(range(total_possible_pairs), quota)
-        pair_indices_iter = (_unrank_pair(k, n) for k in flat_indices)
+        pair_indices_iter = (_decode_pair_index(k, n) for k in flat_indices)
 
     for i, j in pair_indices_iter:
         sampled_pairs.append({
@@ -248,7 +248,7 @@ def create_pairs_from_document(chunks, doc_id, quota):
     return sampled_pairs
 
 
-def _unrank_pair(k, n):
+def _decode_pair_index(k, n):
     """
     Map a flat index k in [0, n*(n-1)//2) to a unique (i, j) with i < j < n.
     

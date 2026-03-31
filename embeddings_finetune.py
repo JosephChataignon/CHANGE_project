@@ -33,6 +33,24 @@ from logging_utils import setup_logging, display_CUDA_info, print_trainable_para
 from data import get_CHANGE_data, get_CHANGE_data_for_sentences
 from models import load_model
 
+
+def _parse_optional_positive_int(raw_value, default, param_name):
+    """
+    Parse an optional positive integer configuration value.
+
+    Returns None when a non-positive value is provided to explicitly disable a cap.
+    """
+    if raw_value is None:
+        value = default
+    else:
+        try:
+            value = int(raw_value)
+        except ValueError as exc:
+            raise ValueError(f"{param_name} must be an integer, got '{raw_value}'") from exc
+    if value <= 0:
+        return None
+    return value
+
 ################################### SETUP ######################################
 ## Load environment variables
 env_file = '.env' # for interactive sessions change to the correct path
@@ -72,28 +90,9 @@ logging.info("Setup finished, starting script\n\n")
 # get data files ("education" or "education_sample" ...)
 data_set = 'education'
 raw_initial_eval_max = config.get('INITIAL_EVAL_MAX_SAMPLES')
-if raw_initial_eval_max is None:
-    initial_eval_max_samples = 5000
-else:
-    try:
-        initial_eval_max_samples = int(raw_initial_eval_max)
-    except ValueError as exc:
-        raise ValueError(f"INITIAL_EVAL_MAX_SAMPLES must be an integer, got '{raw_initial_eval_max}'") from exc
-if initial_eval_max_samples <= 0:
-    # Non-positive values explicitly disable the initial eval cap.
-    initial_eval_max_samples = None
-
+initial_eval_max_samples = _parse_optional_positive_int(raw_initial_eval_max, 5000, "INITIAL_EVAL_MAX_SAMPLES")
 raw_max_pairs_per_doc = config.get('MAX_PAIRS_PER_DOC')
-if raw_max_pairs_per_doc is None:
-    max_pairs_per_doc = 5000
-else:
-    try:
-        max_pairs_per_doc = int(raw_max_pairs_per_doc)
-    except ValueError as exc:
-        raise ValueError(f"MAX_PAIRS_PER_DOC must be an integer, got '{raw_max_pairs_per_doc}'") from exc
-if max_pairs_per_doc <= 0:
-    # Non-positive values explicitly disable the per-document cap.
-    max_pairs_per_doc = None
+max_pairs_per_doc = _parse_optional_positive_int(raw_max_pairs_per_doc, 5000, "MAX_PAIRS_PER_DOC")
 
 # Chose model (examples: "Lajavaness/bilingual-embedding-large", "sentence-transformers/all-mpnet-base-v2"...)
 model_name = config['EMBEDDING_MODEL']
