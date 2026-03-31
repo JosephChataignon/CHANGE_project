@@ -33,6 +33,24 @@ from logging_utils import setup_logging, display_CUDA_info, print_trainable_para
 from data import get_CHANGE_data, get_CHANGE_data_for_sentences
 from models import load_model
 
+
+def _parse_optional_positive_int(raw_value, default, param_name):
+    """
+    Parse an optional positive integer configuration value.
+
+    Returns None when a non-positive value is provided to explicitly disable a cap.
+    """
+    if raw_value is None:
+        value = default
+    else:
+        try:
+            value = int(raw_value)
+        except ValueError as exc:
+            raise ValueError(f"{param_name} must be an integer, got '{raw_value}'") from exc
+    if value <= 0:
+        return None
+    return value
+
 ################################### SETUP ######################################
 ## Load environment variables
 env_file = '.env' # for interactive sessions change to the correct path
@@ -71,6 +89,10 @@ logging.info("Setup finished, starting script\n\n")
 
 # get data files ("education" or "education_sample" ...)
 data_set = 'education'
+raw_initial_eval_max = config.get('INITIAL_EVAL_MAX_SAMPLES')
+initial_eval_max_samples = _parse_optional_positive_int(raw_initial_eval_max, 5000, "INITIAL_EVAL_MAX_SAMPLES")
+raw_max_pairs_per_doc = config.get('MAX_PAIRS_PER_DOC')
+max_pairs_per_doc = _parse_optional_positive_int(raw_max_pairs_per_doc, 5000, "MAX_PAIRS_PER_DOC")
 
 # Chose model (examples: "Lajavaness/bilingual-embedding-large", "sentence-transformers/all-mpnet-base-v2"...)
 model_name = config['EMBEDDING_MODEL']
@@ -102,7 +124,12 @@ ready_flag = os.path.join(processed_dataset_dir, '_READY')
 if dist.get_rank() == 0:
     # commented out caching to always reprocess the data
     # if not os.path.exists(dataset_cache_file):
-    dataset = get_CHANGE_data_for_sentences(data_set, config['DATA_STORAGE'], sample_scale=float(config['SAMPLE_SCALE']))
+    dataset = get_CHANGE_data_for_sentences(
+        data_set,
+        config['DATA_STORAGE'],
+        sample_scale=float(config['SAMPLE_SCALE']),
+        max_pairs_per_doc=max_pairs_per_doc,
+    )
     dataset.save_to_disk(processed_dataset_dir)
     Path(ready_flag).touch()
     # 
@@ -133,14 +160,25 @@ tensorboard_callback = get_tb_callback(config,instance_name)
 
 loss = losses.MultipleNegativesRankingLoss(model).to(torch.device(f'cuda:{local_rank}'))
 
-# full dev set evaluator (run only at start and end of training)
-dev_evaluator = TripletEvaluator(
-    anchors=eval_dataset["anchor"],
-    positives=eval_dataset["positive"],
-    negatives=eval_dataset["negative"],
-    name=data_set,
-    batch_size=8,
-)
+dev_eval_dataset = eval_dataset
+if initial_eval_max_samples is not None and len(eval_dataset) > initial_eval_max_samples:
+    if is_main_process:
+        logging.warning(
+            f"Dev set has {len(eval_dataset)} triplets, limiting initial evaluation to "
+            f"{initial_eval_max_samples} samples to reduce memory usage."
+        )
+    dev_eval_dataset = eval_dataset.shuffle(seed=42).select(range(initial_eval_max_samples))
+
+# full dev set evaluator (run only at start and end of training, main process only)
+dev_evaluator = None
+if is_main_process:
+    dev_evaluator = TripletEvaluator(
+        anchors=dev_eval_dataset["anchor"],
+        positives=dev_eval_dataset["positive"],
+        negatives=dev_eval_dataset["negative"],
+        name=data_set,
+        batch_size=8,
+    )
 dist.barrier()
 if is_main_process:
     logging.info("Running initial evaluation on dev set")
@@ -224,7 +262,7 @@ if is_main_process:
     logging.info(f"model saved at {config['SAVED_MODELS_DIR']}/{instance_name}")
 dist.barrier()
 
-if is_main_process:
+if is_main_process and dev_evaluator is not None:
     logging.info("Running final evaluation on dev set")
     dev_evaluator(model)
 dist.barrier()
