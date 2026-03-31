@@ -126,25 +126,14 @@ test_dataset = dataset["test"]
 
 
 ################################# TRAINING ########################################
-logging.info("Starting training")
+logging.info("Dataset ready, prepare for training")
 
 # for TensorBoard logging
 tensorboard_callback = get_tb_callback(config,instance_name)
 
 loss = losses.MultipleNegativesRankingLoss(model).to(torch.device(f'cuda:{local_rank}'))
 
-# full dev set evaluator (run only at start and end of training)
-dev_evaluator = TripletEvaluator(
-    anchors=eval_dataset["anchor"],
-    positives=eval_dataset["positive"],
-    negatives=eval_dataset["negative"],
-    name=data_set,
-    batch_size=8,
-)
-dist.barrier()
-if is_main_process:
-    logging.info("Running initial evaluation on dev set")
-    dev_evaluator(model)
+
 dist.barrier()
 # Create a smaller evaluator for frequent evals
 eval_subset_size = 5000
@@ -152,13 +141,16 @@ eval_subset = (eval_dataset.shuffle(seed=42).select(
             range(min(eval_subset_size, len(eval_dataset)))
 ))
 logging.info(f"Eval subset size: {len(eval_subset)} of {len(eval_dataset)}")
-partial_dev_evaluator = TripletEvaluator(
-    anchors=eval_subset["anchor"],
-    positives=eval_subset["positive"],
-    negatives=eval_subset["negative"],
-    name=f"{data_set}_subset",
-    batch_size=8,
-)
+partial_dev_evaluator = None
+if is_main_process:
+    partial_dev_evaluator = TripletEvaluator(
+        anchors=eval_subset["anchor"],
+        positives=eval_subset["positive"],
+        negatives=eval_subset["negative"],
+        name=f"{data_set}_subset",
+        batch_size=8,
+    )
+    partial_dev_evaluator(model)
 logging.info("Initialized loss and evaluator")
 
 # Run the training
@@ -225,6 +217,6 @@ if is_main_process:
 dist.barrier()
 
 if is_main_process:
-    logging.info("Running final evaluation on dev set")
-    dev_evaluator(model)
+    logging.info("Running final evaluation on dev subset")
+    partial_dev_evaluator(model)
 dist.barrier()
