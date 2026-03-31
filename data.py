@@ -237,7 +237,7 @@ def create_pairs_from_document(chunks, doc_id, quota):
         pair_indices_iter = ((i, j) for i in range(n) for j in range(i + 1, n))
     else:
         flat_indices = random.sample(range(total_possible_pairs), quota)
-        pair_indices_iter = (_decode_pair_index(k, n) for k in flat_indices)
+        pair_indices_iter = (_decode_pair_index(k, n, total_possible_pairs) for k in flat_indices)
 
     for i, j in pair_indices_iter:
         sampled_pairs.append({
@@ -248,7 +248,7 @@ def create_pairs_from_document(chunks, doc_id, quota):
     return sampled_pairs
 
 
-def _decode_pair_index(k, n):
+def _decode_pair_index(k, n, total_pairs=None):
     """
     Map a flat index k in [0, n*(n-1)//2) to a unique (i, j) with i < j < n.
     
@@ -268,12 +268,13 @@ def _decode_pair_index(k, n):
     -----
     This avoids materializing the full list of combinations in memory.
     """
-    total_pairs = n * (n - 1) // 2
+    total_pairs = total_pairs if total_pairs is not None else n * (n - 1) // 2
     if k < 0 or k >= total_pairs:
         max_k = total_pairs - 1
         raise ValueError(f"Pair index {k} out of range for n={n}. Valid indices are 0 to {max_k}.")
 
-    # Closed-form inverse to avoid O(n) scanning.
+    # Closed-form inverse of the triangular number sequence
+    # (inverse of i*(2n-i-1)/2) to avoid O(n) scanning.
     i = math.floor((2 * n - 1 - math.sqrt((2 * n - 1) ** 2 - 8 * k)) / 2)
     offset = i * (2 * n - i - 1) // 2
     j = k - offset + i + 1
