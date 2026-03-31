@@ -77,8 +77,11 @@ if initial_eval_max_samples <= 0:
     initial_eval_max_samples = None
 
 raw_max_pairs_per_doc = config.get('MAX_PAIRS_PER_DOC')
-max_pairs_per_doc = int(raw_max_pairs_per_doc) if raw_max_pairs_per_doc is not None else 5000
-if max_pairs_per_doc is not None and max_pairs_per_doc <= 0:
+if raw_max_pairs_per_doc is None:
+    max_pairs_per_doc = 5000
+else:
+    max_pairs_per_doc = int(raw_max_pairs_per_doc)
+if max_pairs_per_doc <= 0:
     max_pairs_per_doc = None
 
 # Chose model (examples: "Lajavaness/bilingual-embedding-large", "sentence-transformers/all-mpnet-base-v2"...)
@@ -154,7 +157,8 @@ if initial_eval_max_samples is not None and len(eval_dataset) > initial_eval_max
             f"Dev set has {len(eval_dataset)} triplets, limiting initial evaluation to "
             f"{initial_eval_max_samples} samples to reduce memory usage."
         )
-    dev_eval_dataset = eval_dataset.shuffle(seed=42).select(range(initial_eval_max_samples))
+    limit = min(initial_eval_max_samples, len(eval_dataset))
+    dev_eval_dataset = eval_dataset.shuffle(seed=42).select(range(limit))
 
 # full dev set evaluator (run only at start and end of training, main process only)
 dev_evaluator = None

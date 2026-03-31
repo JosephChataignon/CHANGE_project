@@ -102,7 +102,7 @@ def load_substitutions(substitutions_file):
 
 def get_CHANGE_data_for_sentences(data_type, data_storage, 
                                   segmentation_method={"method":"sentence", "chunk_size":12, "overlap":2}, 
-                                  sample_scale=1, min_triplets_per_doc=10, max_pairs_per_doc=5000):
+                                  sample_scale=1, min_triplets_per_doc=10, max_pairs_per_doc=None):
     """
     Load and process documents for embeddings fine-tuning with sentence-level triplets.
     
@@ -236,9 +236,7 @@ def create_pairs_from_document(chunks, doc_id, quota):
     if quota >= total_possible_pairs:
         pair_indices_iter = ((i, j) for i in range(n) for j in range(i + 1, n))
     else:
-        flat_indices = set()
-        while len(flat_indices) < quota:
-            flat_indices.add(random.randrange(total_possible_pairs))
+        flat_indices = random.sample(range(total_possible_pairs), quota)
         pair_indices_iter = (_unrank_pair(k, n) for k in flat_indices)
 
     for i, j in pair_indices_iter:
