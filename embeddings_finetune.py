@@ -71,6 +71,15 @@ logging.info("Setup finished, starting script\n\n")
 
 # get data files ("education" or "education_sample" ...)
 data_set = 'education'
+raw_initial_eval_max = config.get('INITIAL_EVAL_MAX_SAMPLES')
+initial_eval_max_samples = int(raw_initial_eval_max) if raw_initial_eval_max is not None else 5000
+if initial_eval_max_samples <= 0:
+    initial_eval_max_samples = None
+
+raw_max_pairs_per_doc = config.get('MAX_PAIRS_PER_DOC')
+max_pairs_per_doc = int(raw_max_pairs_per_doc) if raw_max_pairs_per_doc is not None else 5000
+if max_pairs_per_doc is not None and max_pairs_per_doc <= 0:
+    max_pairs_per_doc = None
 
 # Chose model (examples: "Lajavaness/bilingual-embedding-large", "sentence-transformers/all-mpnet-base-v2"...)
 model_name = config['EMBEDDING_MODEL']
@@ -102,7 +111,12 @@ ready_flag = os.path.join(processed_dataset_dir, '_READY')
 if dist.get_rank() == 0:
     # commented out caching to always reprocess the data
     # if not os.path.exists(dataset_cache_file):
-    dataset = get_CHANGE_data_for_sentences(data_set, config['DATA_STORAGE'], sample_scale=float(config['SAMPLE_SCALE']))
+    dataset = get_CHANGE_data_for_sentences(
+        data_set,
+        config['DATA_STORAGE'],
+        sample_scale=float(config['SAMPLE_SCALE']),
+        max_pairs_per_doc=max_pairs_per_doc,
+    )
     dataset.save_to_disk(processed_dataset_dir)
     Path(ready_flag).touch()
     # 
@@ -133,14 +147,25 @@ tensorboard_callback = get_tb_callback(config,instance_name)
 
 loss = losses.MultipleNegativesRankingLoss(model).to(torch.device(f'cuda:{local_rank}'))
 
-# full dev set evaluator (run only at start and end of training)
-dev_evaluator = TripletEvaluator(
-    anchors=eval_dataset["anchor"],
-    positives=eval_dataset["positive"],
-    negatives=eval_dataset["negative"],
-    name=data_set,
-    batch_size=8,
-)
+dev_eval_dataset = eval_dataset
+if initial_eval_max_samples is not None and len(eval_dataset) > initial_eval_max_samples:
+    if is_main_process:
+        logging.warning(
+            f"Dev set has {len(eval_dataset)} triplets, limiting initial evaluation to "
+            f"{initial_eval_max_samples} samples to reduce memory usage."
+        )
+    dev_eval_dataset = eval_dataset.shuffle(seed=42).select(range(initial_eval_max_samples))
+
+# full dev set evaluator (run only at start and end of training, main process only)
+dev_evaluator = None
+if is_main_process:
+    dev_evaluator = TripletEvaluator(
+        anchors=dev_eval_dataset["anchor"],
+        positives=dev_eval_dataset["positive"],
+        negatives=dev_eval_dataset["negative"],
+        name=data_set,
+        batch_size=8,
+    )
 dist.barrier()
 if is_main_process:
     logging.info("Running initial evaluation on dev set")
@@ -224,7 +249,7 @@ if is_main_process:
     logging.info(f"model saved at {config['SAVED_MODELS_DIR']}/{instance_name}")
 dist.barrier()
 
-if is_main_process:
+if is_main_process and dev_evaluator is not None:
     logging.info("Running final evaluation on dev set")
     dev_evaluator(model)
 dist.barrier()

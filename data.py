@@ -102,7 +102,7 @@ def load_substitutions(substitutions_file):
 
 def get_CHANGE_data_for_sentences(data_type, data_storage, 
                                   segmentation_method={"method":"sentence", "chunk_size":12, "overlap":2}, 
-                                  sample_scale=1, min_triplets_per_doc=10):
+                                  sample_scale=1, min_triplets_per_doc=10, max_pairs_per_doc=5000):
     """
     Load and process documents for embeddings fine-tuning with sentence-level triplets.
     
@@ -114,6 +114,8 @@ def get_CHANGE_data_for_sentences(data_type, data_storage,
     overlap : int, default=0
     sample_scale : Scaling factor for quota calculation. Higher values = more samples per document.
     min_triplets_per_doc : Minimum number of triplets to sample per document.
+    max_pairs_per_doc : Hard cap on number of positive pairs sampled per document to avoid OOM.
+        Set to None to disable the cap.
     
     Returns:
     DatasetDict : Dictionary with 'train', 'dev', 'test' splits containing triplets
@@ -156,6 +158,8 @@ def get_CHANGE_data_for_sentences(data_type, data_storage,
         
         possible_pairs = len(chunks) * (len(chunks) - 1) // 2
         quota = max(min_triplets_per_doc, math.ceil(sample_scale * math.sqrt(possible_pairs)))
+        if max_pairs_per_doc is not None:
+            quota = min(quota, max_pairs_per_doc)
         # Create and sample positive pairs from this document
         doc_pairs = create_pairs_from_document(chunks, doc_id, quota=quota)
         sampled_pairs.extend(doc_pairs)
@@ -228,17 +232,36 @@ def create_pairs_from_document(chunks, doc_id, quota):
     n = len(chunks)
     total_possible_pairs = n * (n - 1) // 2
         
-    all_pair_indices = [(i, j) for i in range(n) for j in range(i + 1, n)]
-    sampled_indices = random.sample(all_pair_indices, quota) if quota < total_possible_pairs else all_pair_indices
-    
     sampled_pairs = []
-    for i, j in sampled_indices:
+    if quota >= total_possible_pairs:
+        pair_indices_iter = ((i, j) for i in range(n) for j in range(i + 1, n))
+    else:
+        flat_indices = set()
+        while len(flat_indices) < quota:
+            flat_indices.add(random.randrange(total_possible_pairs))
+        pair_indices_iter = (_unrank_pair(k, n) for k in flat_indices)
+
+    for i, j in pair_indices_iter:
         sampled_pairs.append({
             "anchor": chunks[i],
             "positive": chunks[j],
             "doc_id": doc_id
         })
     return sampled_pairs
+
+
+def _unrank_pair(k, n):
+    """
+    Map a flat index k in [0, n*(n-1)//2) to a unique (i, j) with i < j < n.
+    This avoids materializing the full list of combinations in memory.
+    """
+    remaining = k
+    for i in range(n - 1):
+        count = n - i - 1
+        if remaining < count:
+            return i, i + 1 + remaining
+        remaining -= count
+    raise ValueError(f"Pair index {k} out of range for n={n}")
 
 
 
@@ -280,4 +303,3 @@ def add_negatives_to_pairs(sampled_pairs, all_chunks_by_doc):
         })
     
     return Dataset.from_list(triplets)
-
