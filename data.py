@@ -135,11 +135,9 @@ def get_CHANGE_data_for_sentences(data_type, data_storage,
     
     # Clean documents here ? manage footnotes ?
     
-    # New pipeline: process documents one by one
+    # New pipeline: Pass 1 - segment documents
     logging.info(f'Processing documents with method={segmentation_method}')
     all_chunks_by_doc = {}  # doc_id -> list of chunks
-    sampled_pairs = []  # Collect sampled pairs as we process each document
-    total_pairs_generated = 0
     
     for file_path in tqdm(data_files, desc="Processing documents"):
         # Read document
@@ -154,19 +152,38 @@ def get_CHANGE_data_for_sentences(data_type, data_storage,
         # Store chunks for later negative sampling
         all_chunks_by_doc[doc_id] = chunks
         
-        possible_pairs = len(chunks) * (len(chunks) - 1) // 2
-        quota = max(min_triplets_per_doc, math.ceil(sample_scale * math.sqrt(possible_pairs)))
-        # Create and sample positive pairs from this document
-        doc_pairs = create_pairs_from_document(chunks, doc_id, quota=quota)
-        sampled_pairs.extend(doc_pairs)
-        
-        # Track statistics
-        total_pairs_generated += possible_pairs
-    
-    logging.info(f'Sampled {len(sampled_pairs)} pairs from {total_pairs_generated} possible pairs ')
-    
-    # Add negatives to create triplets
-    triplets = add_negatives_to_pairs(sampled_pairs, all_chunks_by_doc)
+    logging.info(f'Loaded {len(all_chunks_by_doc)} documents into memory for sampling.')
+
+    # Pass 2: Stream triplets directly to disk using a generator
+    def triplet_generator():
+        available_docs = list(all_chunks_by_doc.keys())
+        for doc_id, chunks in all_chunks_by_doc.items():
+            n = len(chunks)
+            possible_pairs = n * (n - 1) // 2
+            quota = max(min_triplets_per_doc, math.ceil(sample_scale * math.sqrt(possible_pairs)))
+            
+            all_pair_indices = [(i, j) for i in range(n) for j in range(i + 1, n)]
+            sampled_indices = random.sample(all_pair_indices, quota) if quota < possible_pairs else all_pair_indices
+            
+            for i, j in sampled_indices:
+                # Find negative example
+                neg_doc = None
+                for _ in range(10):
+                    candidate_doc = random.choice(available_docs)
+                    if candidate_doc != doc_id:
+                        neg_doc = candidate_doc
+                        break
+                if neg_doc is None: continue
+                negative_chunk = random.choice(all_chunks_by_doc[neg_doc])
+                
+                yield {
+                    "anchor": chunks[i],
+                    "positive": chunks[j],
+                    "negative": negative_chunk
+                }
+
+    logging.info("Streaming triplets to disk using generator...")
+    triplets = Dataset.from_generator(triplet_generator)
 
     logging.info(f'Triplet dataset created with {len(triplets)} triplets, now splitting into train/dev/test')
     train_split = triplets.train_test_split(test_size=0.2, seed=42)
@@ -218,66 +235,4 @@ def _split_text_into_sentences(text):
                 [sentence[i:i+max_sentence_chars] for i in range(0, len(sentence), max_sentence_chars)]
             )
     return capped_sentences
-
-def create_pairs_from_document(chunks, doc_id, quota):
-    """
-    Create all possible positive pairs from chunks and immediately sample them.
-    Returns:
-    list of dict : Sampled pairs with keys 'anchor', 'positive', 'doc_id'
-    """
-    n = len(chunks)
-    total_possible_pairs = n * (n - 1) // 2
-        
-    all_pair_indices = [(i, j) for i in range(n) for j in range(i + 1, n)]
-    sampled_indices = random.sample(all_pair_indices, quota) if quota < total_possible_pairs else all_pair_indices
-    
-    sampled_pairs = []
-    for i, j in sampled_indices:
-        sampled_pairs.append({
-            "anchor": chunks[i],
-            "positive": chunks[j],
-            "doc_id": doc_id
-        })
-    return sampled_pairs
-
-
-
-def add_negatives_to_pairs(sampled_pairs, all_chunks_by_doc):
-    """
-    Add negative examples to pairs to create triplets.
-    
-    Parameters:
-    sampled_pairs : list of dict
-        Pairs with 'anchor', 'positive', 'doc_id' keys
-    all_chunks_by_doc : dict
-        Mapping from doc_id to list of chunks from that document
-    
-    Returns:
-    Dataset : HuggingFace Dataset with 'anchor', 'positive', 'negative' columns
-    """
-    triplets = []
-    available_docs = list(all_chunks_by_doc.keys())
-    
-    for pair in tqdm(sampled_pairs, desc="Adding negatives to create triplets"):
-        anchor_doc = pair["doc_id"]
-        
-        # Select a negative from a different document
-        neg_doc = None
-        for _ in range(10):
-            candidate_doc = random.choice(available_docs)
-            if candidate_doc != anchor_doc:
-                neg_doc = candidate_doc
-                break
-        if neg_doc is None: continue
-        
-        # Pick random chunk from negative document
-        negative_chunk = random.choice(all_chunks_by_doc[neg_doc])
-        
-        triplets.append({
-            "anchor": pair["anchor"],
-            "positive": pair["positive"],
-            "negative": negative_chunk
-        })
-    
-    return Dataset.from_list(triplets)
 
