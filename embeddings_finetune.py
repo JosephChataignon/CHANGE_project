@@ -164,11 +164,11 @@ args = SentenceTransformerTrainingArguments(
     output_dir=os.path.join(config['SAVED_MODELS_DIR'],f'checkpoint-{instance_name}'),
     # Optional training parameters:
     num_train_epochs=1,
-    per_device_train_batch_size=8,
-    per_device_eval_batch_size=8,
+    per_device_train_batch_size=4,
+    per_device_eval_batch_size=4,
     warmup_ratio=0.1,
-    fp16=False,  # Set to False if GPU can't handle FP16
-    bf16=False,  # Set to True if GPU supports BF16
+    fp16=not torch.cuda.is_bf16_supported(),  # Fallback to fp16 if no bf16
+    bf16=torch.cuda.is_bf16_supported(),      # Prefer bf16 for stability
     batch_sampler=BatchSamplers.NO_DUPLICATES,  # MultipleNegativesRankingLoss benefits from no duplicates
     # Optional tracking/debugging parameters:
     eval_strategy="steps",
