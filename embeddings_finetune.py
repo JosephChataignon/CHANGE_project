@@ -136,7 +136,11 @@ logging.info("Dataset ready, prepare for training")
 # for TensorBoard logging
 tensorboard_callback = get_tb_callback(config,instance_name)
 
-loss = losses.MultipleNegativesRankingLoss(model).to(torch.device(f'cuda:{local_rank}'))
+loss = losses.TripletLoss(
+    model=model, 
+    distance_metric=losses.TripletLoss.TripletDistanceMetric.COSINE, 
+    triplet_margin=0.5 # You may need to tune this margin
+).to(torch.device(f'cuda:{local_rank}'))
 
 
 dist.barrier()
@@ -166,6 +170,7 @@ args = SentenceTransformerTrainingArguments(
     num_train_epochs=1,
     per_device_train_batch_size=4,
     per_device_eval_batch_size=4,
+    gradient_checkpointing=True, # trade computation time for memory
     warmup_ratio=0.1,
     fp16=not torch.cuda.is_bf16_supported(),  # Fallback to fp16 if no bf16
     bf16=torch.cuda.is_bf16_supported(),      # Prefer bf16 for stability
