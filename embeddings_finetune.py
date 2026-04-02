@@ -143,7 +143,7 @@ tensorboard_callback = get_tb_callback(config,instance_name)
 
 loss = losses.TripletLoss(
     model=model, 
-    distance_metric=losses.TripletLoss.TripletDistanceMetric.COSINE, 
+    distance_metric='cosine', 
     triplet_margin=0.5 # You may need to tune this margin
 ).to(torch.device(f'cuda:{local_rank}'))
 
