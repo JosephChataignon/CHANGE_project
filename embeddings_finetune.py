@@ -75,7 +75,12 @@ data_set = 'education'
 # Chose model (examples: "Lajavaness/bilingual-embedding-large", "sentence-transformers/all-mpnet-base-v2"...)
 model_name = config['EMBEDDING_MODEL']
 
-model = SentenceTransformer(model_name, device=f'cuda:{local_rank}', trust_remote_code=True)
+model = SentenceTransformer(
+    model_name, 
+    device=f'cuda:{local_rank}', 
+    trust_remote_code=True,
+    model_kwargs={'attn_implementation': 'eager'} if 'nemotron' in model_name else {}
+)
 # Set a max sequence length to avoid blowing up VRAM use
 max_seq_length = 256
 model.max_seq_length = max_seq_length
