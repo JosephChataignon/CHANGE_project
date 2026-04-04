@@ -82,7 +82,7 @@ model = SentenceTransformer(
     model_kwargs={'attn_implementation': 'eager'} if 'nemotron' in model_name else {}
 )
 # Set a max sequence length to avoid blowing up VRAM use
-max_seq_length = 256
+max_seq_length = 128
 model.max_seq_length = max_seq_length
 model.tokenizer.model_max_length = max_seq_length
 logging.info(f"Using max_seq_length={max_seq_length} for model and tokenizer truncation")
@@ -165,6 +165,9 @@ if is_main_process:
         batch_size=8,
     )
     partial_dev_evaluator(model)
+    # Free memory before DDP reducer allocation
+    torch.cuda.synchronize()
+    torch.cuda.empty_cache()
 logging.info("Initialized loss and evaluator")
 
 # Run the training
@@ -173,8 +176,8 @@ args = SentenceTransformerTrainingArguments(
     output_dir=os.path.join(config['SAVED_MODELS_DIR'],f'checkpoint-{instance_name}'),
     # Optional training parameters:
     num_train_epochs=1,
-    per_device_train_batch_size=4,
-    per_device_eval_batch_size=4,
+    per_device_train_batch_size=1,
+    per_device_eval_batch_size=1,
     gradient_checkpointing=True, # trade computation time for memory
     warmup_ratio=0.1,
     fp16=not torch.cuda.is_bf16_supported(),  # Fallback to fp16 if no bf16
@@ -187,9 +190,10 @@ args = SentenceTransformerTrainingArguments(
     save_steps=100,
     save_total_limit=2,
     logging_steps=100,
-    gradient_accumulation_steps=2,  # Effectively same batch size but less memory
+    gradient_accumulation_steps=8,  # Effectively same batch size but less memory
     dataloader_num_workers=0,       # Disable parallel data loading
     dataloader_pin_memory=False,    # Disable pinned memory
+    dataloader_drop_last=True,      # Enable dropping last batch to avoid OOM with small batch sizes
 )
 trainer = SentenceTransformerTrainer(
     model=model,
