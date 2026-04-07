@@ -179,6 +179,7 @@ args = SentenceTransformerTrainingArguments(
     per_device_train_batch_size=1,
     per_device_eval_batch_size=1,
     gradient_checkpointing=True, # trade computation time for memory
+    gradient_checkpointing_kwargs={"use_reentrant": False},
     warmup_ratio=0.1,
     optim="adamw_bnb_8bit",
     bf16=True,
