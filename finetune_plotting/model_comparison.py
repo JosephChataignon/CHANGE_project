@@ -280,7 +280,7 @@ class ModelComparator:
                     'sample_size': sample_size,
                     'device': str(self.device)
                 },
-                'weight_analysis': self.weight_results,
+                'weight_analysis': self.weight_deltas,
                 'embedding_similarity': similarity_results,
                 'pca': pca_results
             }
