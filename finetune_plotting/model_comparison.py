@@ -253,8 +253,11 @@ class ModelComparator:
             Dictionary containing all comparison results
         """
         try:
+            # Get script directory to ensure paths are relative to script location
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+            
             # Create report directory
-            report_dir = "comparison_reports"
+            report_dir = os.path.join(script_dir, "comparison_reports")
             os.makedirs(report_dir, exist_ok=True)
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
                         
