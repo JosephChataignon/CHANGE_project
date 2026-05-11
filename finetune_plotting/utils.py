@@ -158,7 +158,7 @@ def create_category_plot(transformed_data: Dict, categories: List[Dict], pca=Non
         transformed_data: Dictionary containing transformed PCA data for all categories
         categories: List of category definitions with names and colors
         pca: PCA object for variance information
-        save_path: Directory to save the visualization
+        save_path: Directory to save the visualization (relative to script directory)
     """
     try:
         plt.figure(figsize=(14, 10))
@@ -193,12 +193,16 @@ def create_category_plot(transformed_data: Dict, categories: List[Dict], pca=Non
         plt.grid(True, alpha=0.3)
         plt.tight_layout()
         
+        # Get script directory to ensure paths are relative to script location
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        full_save_path = os.path.join(script_dir, save_path)
+        
         # Create plot directory
-        os.makedirs(save_path, exist_ok=True)
+        os.makedirs(full_save_path, exist_ok=True)
         
         # Save visualization
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        filename = f'{save_path}/pca_comparison_{timestamp}.png'
+        filename = os.path.join(full_save_path, f'pca_comparison_{timestamp}.png')
         plt.savefig(filename, dpi=300, bbox_inches='tight')
         plt.close()
         
