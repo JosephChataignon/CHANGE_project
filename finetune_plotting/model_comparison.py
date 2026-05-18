@@ -33,10 +33,7 @@ from pathlib import Path
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler('model_comparison.log'),
-        logging.StreamHandler()
-    ]
+    handlers=[logging.FileHandler('model_comparison.log'),logging.StreamHandler()]
 )
 logger = logging.getLogger(__name__)
 
@@ -56,38 +53,24 @@ class ModelComparator:
         self.original_model_path = original_model_path
         self.fine_tuned_model_path = fine_tuned_model_path
         self.device = torch.device(device)
-        
-        # Placeholders for models
-        self.original_model = None
-        self.fine_tuned_model = None
+        logger.info(f"Initialized ModelComparator with device: {self.device}")
         
         # Placeholders for analysis results
         self.weight_deltas = {}
         self.embedding_comparison = {}
         self.pca_results = {}
-        
-        logger.info(f"Initialized ModelComparator with device: {self.device}")
-        logger.info(f"Original model: {original_model_path}")
-        logger.info(f"Fine-tuned model: {fine_tuned_model_path}")
-    
-    def load_models(self):
-        """Load both original and fine-tuned models"""
         try:
-            logger.info("Loading original model...")
             self.original_model = SentenceTransformer(self.original_model_path, device=self.device)
             logger.info(f"Original model loaded: {self.original_model_path}")
-            
-            logger.info("Loading fine-tuned model...")
             self.fine_tuned_model = SentenceTransformer(self.fine_tuned_model_path, device=self.device)
             logger.info(f"Fine-tuned model loaded: {self.fine_tuned_model_path}")
-            
-            # Ensure both models use the same max sequence length
-            if hasattr(self.original_model, 'max_seq_length'):
-                self.fine_tuned_model.max_seq_length = self.original_model.max_seq_length
-                self.fine_tuned_model.tokenizer.model_max_length = self.original_model.max_seq_length
-            
         except Exception as e:
             logger.error(f"Error loading models: {e}")
+            raise
+        try:
+            pass #todo: implement data loading here
+        except Exception as e:
+            logger.error(f"Error loading data: {e}")
             raise
     
     def compare_weights(self) -> Dict[str, Dict]:
@@ -408,106 +391,54 @@ class ModelComparator:
             logger.error(f"Error creating interactive plot: {e}")
             raise
     
-    def tsne_visualization(self, texts: List[str], labels: Optional[List[str]] = None,
-                          perplexity: int = 30, batch_size: int = 32) -> Dict:
-        """
-        Perform t-SNE visualization of embeddings
+    def generate_comparison_report(self, report_dir: str = 'comparison_reports') -> Dict:
+        # Create report directory
+        os.makedirs(report_dir, exist_ok=True)
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         
-        Args:
-            texts: List of text strings to visualize
-            labels: Optional list of labels for each text
-            perplexity: t-SNE perplexity parameter
-            batch_size: Batch size for embedding generation
+        # 1. Weight analysis
+        logger.info("Performing weight analysis...")
+        weight_results = self.compare_weights()
         
-        Returns:
-            Dictionary containing t-SNE results
-        """
-        original_embeddings, fine_tuned_embeddings = self.generate_embeddings(texts, batch_size)
+        # 2. Embedding similarity analysis
+        logger.info("Performing embedding similarity analysis...")
+        similarity_results = self.analyze_embedding_similarity()
         
-        # Perform t-SNE on both sets of embeddings
-        tsne = TSNE(n_components=2, perplexity=perplexity, random_state=42)
+        # 3. PCA visualization (2D)
+        logger.info("Performing PCA analysis (2D)...")
+        pca_2d_results = self.pca_visualization(n_components=2)
         
-        original_tsne = tsne.fit_transform(original_embeddings)
-        fine_tuned_tsne = tsne.fit_transform(fine_tuned_embeddings)
+        # 4. PCA visualization (3D)
+        logger.info("Performing PCA analysis (3D)...")
+        pca_3d_results = self.pca_visualization(n_components=3)
         
-        # Store results
-        tsne_results = {
-            'original_tsne': original_tsne.tolist(),
-            'fine_tuned_tsne': fine_tuned_tsne.tolist(),
-            'texts': texts,
-            'labels': labels if labels else [f"text_{i}" for i in range(len(texts))]
+        # Compile comprehensive report
+        report = {
+            'metadata': {
+                'timestamp': timestamp,
+                'original_model': self.original_model_path,
+                'fine_tuned_model': self.fine_tuned_model_path,
+                'device': str(self.device)
+            },
+            'weight_analysis': weight_results,
+            'embedding_similarity': similarity_results,
+            'pca_2d': pca_2d_results,
+            'pca_3d': pca_3d_results
         }
         
-        # Create visualization
-        self._create_tsne_plot(tsne_results)
+        # Save report as JSON
+        report_filename = os.path.join(report_dir, f'comparison_report_{timestamp}.json')
+        with open(report_filename, 'w') as f:
+            json.dump(report, f, indent=2)
         
-        logger.info("t-SNE visualization completed")
+        logger.info(f"Comparison report saved to {report_filename}")
         
-        return tsne_results
-    
-    def generate_comparison_report(self, sample_texts: List[str], 
-                                  report_dir: str = 'comparison_reports') -> Dict:
-        """
-        Generate comprehensive comparison report
+        # Save summary statistics
+        summary_filename = os.path.join(report_dir, f'comparison_summary_{timestamp}.txt')
+        self._save_summary_report(report, summary_filename)
         
-        Args:
-            sample_texts: List of sample texts for embedding analysis
-            report_dir: Directory to save the report
-        
-        Returns:
-            Dictionary containing all comparison results
-        """
-        try:
-            # Create report directory
-            os.makedirs(report_dir, exist_ok=True)
-            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-            
-            # Perform all analyses
-            logger.info("Starting comprehensive model comparison...")
-            
-            # 1. Weight analysis
-            logger.info("Performing weight analysis...")
-            weight_results = self.compare_weights()
-            
-            # 2. Embedding similarity analysis
-            logger.info("Performing embedding similarity analysis...")
-            similarity_results = self.analyze_embedding_similarity(sample_texts)
-            
-            # 3. PCA visualization (2D)
-            logger.info("Performing PCA analysis (2D)...")
-            pca_2d_results = self.pca_visualization(sample_texts, n_components=2)
-            
-            # Compile comprehensive report
-            report = {
-                'metadata': {
-                    'timestamp': timestamp,
-                    'original_model': self.original_model_path,
-                    'fine_tuned_model': self.fine_tuned_model_path,
-                    'sample_size': len(sample_texts),
-                    'device': str(self.device)
-                },
-                'weight_analysis': weight_results,
-                'embedding_similarity': similarity_results,
-                'pca_2d': pca_2d_results,
-            }
-            
-            # Save report as JSON
-            report_filename = os.path.join(report_dir, f'comparison_report_{timestamp}.json')
-            with open(report_filename, 'w') as f:
-                json.dump(report, f, indent=2)
-            
-            logger.info(f"Comparison report saved to {report_filename}")
-            
-            # Save summary statistics
-            summary_filename = os.path.join(report_dir, f'comparison_summary_{timestamp}.txt')
-            self._save_summary_report(report, summary_filename)
-            
-            return report
-            
-        except Exception as e:
-            logger.error(f"Error generating comparison report: {e}")
-            raise
-    
+        return report
+
     def _save_summary_report(self, report: Dict, filename: str):
         """Save a human-readable summary of the comparison results"""
         try:
@@ -521,7 +452,6 @@ class ModelComparator:
                 f.write(f"Timestamp: {report['metadata']['timestamp']}\n")
                 f.write(f"Original Model: {report['metadata']['original_model']}\n")
                 f.write(f"Fine-tuned Model: {report['metadata']['fine_tuned_model']}\n")
-                f.write(f"Sample Size: {report['metadata']['sample_size']}\n")
                 f.write(f"Device: {report['metadata']['device']}\n\n")
                 
                 # Weight Analysis Summary
@@ -568,29 +498,12 @@ def main():
     original_model = "sentence-transformers/all-mpnet-base-v2"  # Placeholder
     fine_tuned_model = "/path/to/fine/tuned/model"  # Placeholder - will be provided later
     
-    # Sample texts for analysis
-    sample_texts = [
-        "The quick brown fox jumps over the lazy dog",
-        "Machine learning is transforming artificial intelligence",
-        "Natural language processing helps computers understand human language",
-        "Deep learning models require large amounts of training data",
-        "Transformers have revolutionized sequence-to-sequence tasks",
-        "Embedding models convert text to dense vector representations",
-        "Fine-tuning adapts pre-trained models to specific domains",
-        "The university research project focuses on educational applications",
-        "Students learn best through interactive and engaging content",
-        "Technology enhances learning outcomes in modern education"
-    ]
-    
     try:
         # Initialize comparator
         comparator = ModelComparator(original_model, fine_tuned_model)
         
-        # Load models
-        comparator.load_models()
-        
         # Generate comprehensive report
-        report = comparator.generate_comparison_report(sample_texts)
+        comparator.generate_comparison_report()
         
         logger.info("Model comparison completed successfully!")
         

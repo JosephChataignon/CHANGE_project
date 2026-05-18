@@ -21,6 +21,7 @@ from datasets import load_dataset
 # Add parent directory to path to import data.py
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 from data import get_CHANGE_data_for_sentences
+from data import get_CHANGE_data_by_document
 
 # Configure logging for this module
 logger = logging.getLogger(__name__)

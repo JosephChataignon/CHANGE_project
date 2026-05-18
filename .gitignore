@@ -9,6 +9,7 @@ checkpoints/
 .hf_token
 .*token
 validation_stage_1/llm_config.yaml
+finetune_plotting/.env
 
 
 # Byte-compiled / optimized / DLL files
