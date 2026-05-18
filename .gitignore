@@ -3,7 +3,6 @@ logs/
 venv/
 saved_models/
 checkpoints/
-finetune_plotting/.env
 
 # Access tokens: git, huggingface
 .git_token

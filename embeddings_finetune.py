@@ -75,14 +75,9 @@ data_set = 'education'
 # Chose model (examples: "Lajavaness/bilingual-embedding-large", "sentence-transformers/all-mpnet-base-v2"...)
 model_name = config['EMBEDDING_MODEL']
 
-model = SentenceTransformer(
-    model_name, 
-    device=f'cuda:{local_rank}', 
-    trust_remote_code=True,
-    model_kwargs={'attn_implementation': 'eager'} if 'nemotron' in model_name else {}
-)
+model = SentenceTransformer(model_name, device=f'cuda:{local_rank}', trust_remote_code=True)
 # Set a max sequence length to avoid blowing up VRAM use
-max_seq_length = 128
+max_seq_length = 256
 model.max_seq_length = max_seq_length
 model.tokenizer.model_max_length = max_seq_length
 logging.info(f"Using max_seq_length={max_seq_length} for model and tokenizer truncation")
@@ -141,11 +136,7 @@ logging.info("Dataset ready, prepare for training")
 # for TensorBoard logging
 tensorboard_callback = get_tb_callback(config,instance_name)
 
-loss = losses.TripletLoss(
-    model=model, 
-    distance_metric=losses.TripletDistanceMetric.COSINE, 
-    triplet_margin=0.5 # You may need to tune this margin
-).to(torch.device(f'cuda:{local_rank}'))
+loss = losses.MultipleNegativesRankingLoss(model).to(torch.device(f'cuda:{local_rank}'))
 
 
 dist.barrier()
@@ -165,9 +156,6 @@ if is_main_process:
         batch_size=8,
     )
     partial_dev_evaluator(model)
-    # Free memory before DDP reducer allocation
-    torch.cuda.synchronize()
-    torch.cuda.empty_cache()
 logging.info("Initialized loss and evaluator")
 
 # Run the training
@@ -176,13 +164,11 @@ args = SentenceTransformerTrainingArguments(
     output_dir=os.path.join(config['SAVED_MODELS_DIR'],f'checkpoint-{instance_name}'),
     # Optional training parameters:
     num_train_epochs=1,
-    per_device_train_batch_size=1,
-    per_device_eval_batch_size=1,
-    gradient_checkpointing=True, # trade computation time for memory
-    gradient_checkpointing_kwargs={"use_reentrant": False},
+    per_device_train_batch_size=4,
+    per_device_eval_batch_size=4,
     warmup_ratio=0.1,
-    optim="adamw_bnb_8bit",
-    bf16=True,
+    fp16=not torch.cuda.is_bf16_supported(),  # Fallback to fp16 if no bf16
+    bf16=torch.cuda.is_bf16_supported(),      # Prefer bf16 for stability
     batch_sampler=BatchSamplers.NO_DUPLICATES,  # MultipleNegativesRankingLoss benefits from no duplicates
     # Optional tracking/debugging parameters:
     eval_strategy="steps",
@@ -191,10 +177,9 @@ args = SentenceTransformerTrainingArguments(
     save_steps=100,
     save_total_limit=2,
     logging_steps=100,
-    gradient_accumulation_steps=8,  # Effectively same batch size but less memory
+    gradient_accumulation_steps=2,  # Effectively same batch size but less memory
     dataloader_num_workers=0,       # Disable parallel data loading
     dataloader_pin_memory=False,    # Disable pinned memory
-    dataloader_drop_last=True,      # Enable dropping last batch to avoid OOM with small batch sizes
 )
 trainer = SentenceTransformerTrainer(
     model=model,
