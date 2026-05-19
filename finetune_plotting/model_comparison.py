@@ -23,7 +23,7 @@ from sentence_transformers import SentenceTransformer
 
 # Add utils to path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-from utils import load_comparison_data, create_category_plot, load_dataset_samples
+from utils import create_category_plot, load_dataset_samples, create_categories_for_visualization
 
 # Configure logging
 logging.basicConfig(
@@ -141,55 +141,64 @@ class ModelComparator:
 
     def pca_comparison_visualization(self, data: Dict) -> Dict:
         """
-        Generate 4-category PCA comparison visualization
+        Generate PCA comparison visualization for arbitrary data labels
         
         Args:
-            data: Dictionary containing dataset samples
+            data: Dictionary containing dataset samples with format {'label': [text_samples]}
+        
+        Returns:
+            Dictionary containing PCA results and transformed data
         """
         logger.info("Generating embeddings for all categories...")
+        embeddings_dict = {}  # Store embeddings by label and model
+        label_info = []  # Track label information for visualization
         
-        #general_embeddings_base = self.original_model.encode(data_general, batch_size=32, convert_to_numpy=True, show_progress_bar=True)
-        #general_embeddings_finetuned = self.fine_tuned_model.encode(data_general, batch_size=32, convert_to_numpy=True, show_progress_bar=True)
-        embeddings = {}
-        for name,data_samples in data.items():
+        # Generate embeddings for each label with both models
+        for label, data_samples in data.items():
+            logger.info(f"Processing {len(data_samples)} samples for label: {label}")
+            
+            # Generate embeddings with base model and fine-tuned model
+            base_embeddings = self.original_model.encode(
+                data_samples, batch_size=32, convert_to_numpy=True, show_progress_bar=True)
+            finetuned_embeddings = self.fine_tuned_model.encode(
+                data_samples, batch_size=32, convert_to_numpy=True, show_progress_bar=True)
+            
+            # Store embeddings
+            embeddings_dict[f'{label}_base'] = base_embeddings
+            embeddings_dict[f'{label}_finetuned'] = finetuned_embeddings
+            
+            # Store label for visualization
+            label_info.append(label)
         
-        # Fit PCA on our dataset + base model only
-        logger.info("Fitting PCA on our dataset with base model...")
+        # Combine all embeddings for PCA fitting
+        all_embeddings = [item for sublist in embeddings_dict.values() for item in sublist]
+        combined_embeddings = np.vstack(all_embeddings)
+        logger.info(f"Fitting PCA on {len(combined_embeddings)} total embeddings...")
         pca = PCA(n_components=2)
-        pca.fit(our_base_embeddings)
-        
-        # Transform all embeddings
-        logger.info("Transforming all embeddings...")
-        transformed = {
-            'our_base': pca.transform(our_base_embeddings),
-            'our_finetuned': pca.transform(our_finetuned_embeddings),
-            'general_base': pca.transform(general_base_embeddings),
-            'general_finetuned': pca.transform(general_finetuned_embeddings)
-        }
-        
-        # Create 4-category visualization
-        create_category_plot(transformed, data['categories'], pca)
-        
+        pca.fit(combined_embeddings)
+
+        # Transform all embeddings using the fitted PCA
+        logger.info("Transforming all embeddings with PCA...")
+        transformed_data = {}
+        for key, embeddings in embeddings_dict.items():
+            transformed_data[key] = pca.transform(embeddings)
+
+        # Create visualization with dynamic categories
+        categories = self.create_categories_for_visualization(label_info)
+        visualization_file_path = create_category_plot(transformed_data, label, pca)
+
         # Store results (convert numpy arrays to lists for JSON serialization)
         pca_results = {
             'pca_variance': pca.explained_variance_ratio_.tolist(),
-            'categories': data['categories'],
-            'sample_sizes': {
-                'our_dataset': len(data['our_data']),
-                'general_dataset': len(data['general_data'])
-            },
-            'transformed_data': {
-                'our_base': transformed['our_base'].tolist(),
-                'our_finetuned': transformed['our_finetuned'].tolist(),
-                'general_base': transformed['general_base'].tolist(),
-                'general_finetuned': transformed['general_finetuned'].tolist()
-            }
+            'categories': categories,
+            'sample_sizes': {label: len(data[label]) for label in label_info},
+            'transformed_data': {key: data.tolist() for key, data in transformed_data.items()}
         }
-        
+
         self.pca_results = pca_results
-        
-        logger.info("4-category PCA comparison visualization completed")
-        
+
+        logger.info(f"PCA comparison visualization completed for {len(label_info)} labels")
+
         return pca_results
 
     def generate_comparison_report(self, documents_list: List[str]) -> Dict:
@@ -218,8 +227,13 @@ class ModelComparator:
         for i,doc in enumerate(documents_list):
             doc_data = load_dataset_samples(doc)
             docs_data[f'doc_{i}'] = doc_data
+        
+        # Add general_data to docs_data for comparison
+        docs_data_with_general = docs_data.copy()
+        docs_data_with_general['general_data'] = data_general
+        
         pca_results_all = self.pca_comparison_visualization({'general_data': data_general, 'our_data': data_ours})
-        pca_results_by_doc = self.pca_comparison_visualization(docs_data.update({'general_data': data_general}))
+        pca_results_by_doc = self.pca_comparison_visualization(docs_data_with_general)
         
         # Compile comprehensive report, save as json
         report = {

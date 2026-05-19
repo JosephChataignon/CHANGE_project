@@ -102,97 +102,109 @@ def load_dataset_samples(dataset_type: str, sample_size: int) -> List[str]:
                 max_chunks=sample_size )
         return texts
 
-def load_comparison_data(own_data_size: int = 500, general_data_size: int = 500) -> Dict:
-    """
-    Load data for 4-category comparison visualization
-    
-    Args:
-        own_data_size: Number of samples from our dataset
-        general_data_size: Number of samples from general dataset
-    
-    Returns:
-        Dictionary containing data for all categories
-    """
-    # Load our dataset samples
-    our_data = load_dataset_samples(dataset_type='our', sample_size=own_data_size)
-    
-    # Load general dataset samples
-    general_data = load_dataset_samples(dataset_type='general', sample_size=general_data_size)
-    
-    # Define categories with labels and colors
-    categories = [
-        {'name': 'our dataset/base', 'color': 'blue'},
-        {'name': 'our dataset/fine-tuned', 'color': 'orange'},
-        {'name': 'general dataset/base', 'color': 'green'},
-        {'name': 'general dataset/fine-tuned', 'color': 'red'}
-    ]
-    
-    return {
-        'our_data': our_data,
-        'general_data': general_data,
-        'categories': categories
-    }
 
-
-def create_category_plot(transformed_data: Dict, categories: List[Dict], pca=None, save_path: str = 'visualizations'):
+def create_category_plot(transformed_data: Dict, categories: List[Dict], pca, save_path: str = 'visualizations'):
     """
-    Create 4-category scatter plot with different colors
+    Create scatter plot for arbitrary categories with different colors and markers
     
     Args:
         transformed_data: Dictionary containing transformed PCA data for all categories
-        categories: List of category definitions with names and colors
+        categories: List of category definitions with names, colors, and markers
         pca: PCA object for variance information
         save_path: Directory to save the visualization (relative to script directory)
     """
-    try:
-        plt.figure(figsize=(14, 10))
+    plt.figure(figsize=(14, 10))
+    
+    # Plot each category
+    for category in categories:
+        # Find the data key that matches this category
+        data_key = None
+        if category['model_type'] == 'base':
+            data_key = category['base_key']
+        else:
+            data_key = category['finetuned_key']
         
-        # Plot each category
-        for i, category in enumerate(categories):
-            if i == 0:  # our dataset/base
-                data = transformed_data['our_base']
-            elif i == 1:  # our dataset/fine-tuned
-                data = transformed_data['our_finetuned']
-            elif i == 2:  # general dataset/base
-                data = transformed_data['general_base']
-            else:  # general dataset/fine-tuned
-                data = transformed_data['general_finetuned']
+        if data_key and data_key in transformed_data:
+            data = transformed_data[data_key]
+            
+            # Use marker if specified, default to circle
+            marker = category.get('marker', 'o')
+            alpha = category.get('alpha', 0.6)
+            size = category.get('size', 80)
             
             plt.scatter(data[:, 0], data[:, 1],
-                       color=category['color'],
-                       label=category['name'],
-                       alpha=0.6,
-                       s=80)
+                        color=category['color'],
+                        label=category['name'],
+                        alpha=alpha,
+                        s=size,
+                        marker=marker)
+    
+    # Get PCA variance from PCA object
+    pca_variance = pca.explained_variance_ratio_
+    
+    plt.title('PCA Comparison: Embedding Space', fontsize=16)
+    plt.xlabel(f'Principal Component 1 ({pca_variance[0]*100:.1f}%)', fontsize=12)
+    plt.ylabel(f'Principal Component 2 ({pca_variance[1]*100:.1f}%)', fontsize=12)
+    plt.legend(title='Category', fontsize=10, loc='upper right', bbox_to_anchor=(1.15, 1))
+    plt.grid(True, alpha=0.3)
+    plt.tight_layout()
+    
+    # Get script directory to ensure paths are relative to script location
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    full_save_path = os.path.join(script_dir, save_path)
+    os.makedirs(full_save_path, exist_ok=True)
+    # Save visualization
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    filename = os.path.join(full_save_path, f'pca_comparison_{timestamp}.png')
+    plt.savefig(filename, dpi=300, bbox_inches='tight')
+    plt.close()
+    
+    logger.info(f"Saved PCA comparison visualization to {filename}")
+    return filename
         
-        # Get PCA variance from PCA object
-        if pca is not None:
-            pca_variance = pca.explained_variance_ratio_
+
+
+def create_categories_for_visualization(self, label_info: List[str]) -> List[Dict]:
+    """
+    Create category definitions for visualization with proper color scheme
+    
+    Args:
+        label_info: List of label strings
+        
+    Returns:
+        List of category definitions with names and colors
+    """
+    categories = []
+    
+    # Define color schemes
+    bluish_colors = [
+        '#1f77b4', '#6baed6', '#9ecae1', '#c6dbef',  # Blues
+        '#21908d', '#4292c6', '#6baed6', '#9ecae1',  # Teals
+        '#3182bd', '#6baed6', '#9ecae1', '#c6dbef'   # More blues
+    ]
+    
+    for i, label in enumerate(label_info):
+        
+        # Assign red to 'general_data' label, cycle through bluish colors for others
+        if label == 'general_data':
+            color = '#ff7f0e'  # Orange-red
         else:
-            pca_variance = [0.25, 0.20]  # Fallback values
+            color = bluish_colors[i % len(bluish_colors)]
+            
         
-        plt.title('PCA Comparison: Our Dataset vs General Dataset', fontsize=16)
-        plt.xlabel(f'Principal Component 1 ({pca_variance[0]*100:.1f}%)', fontsize=12)
-        plt.ylabel(f'Principal Component 2 ({pca_variance[1]*100:.1f}%)', fontsize=12)
-        plt.legend(title='Category', fontsize=12, loc='upper right')
-        plt.grid(True, alpha=0.3)
-        plt.tight_layout()
-        
-        # Get script directory to ensure paths are relative to script location
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        full_save_path = os.path.join(script_dir, save_path)
-        
-        # Create plot directory
-        os.makedirs(full_save_path, exist_ok=True)
-        
-        # Save visualization
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        filename = os.path.join(full_save_path, f'pca_comparison_{timestamp}.png')
-        plt.savefig(filename, dpi=300, bbox_inches='tight')
-        plt.close()
-        
-        logger.info(f"Saved 4-category PCA comparison visualization to {filename}")
-        return filename
-        
-    except Exception as e:
-        logger.error(f"Error creating category plot: {e}")
-        raise
+    # Create category entries for base and fine-tuned models
+        categories.append({
+            'name': f'{label}/base',
+            'color': color,
+            'marker': 'o',  # Circle for base model
+            'alpha': 0.6,
+            'label': label
+        })
+        categories.append({
+            'name': f'{label}/finetuned',
+            'color': color,
+            'marker': 's',  # Square for fine-tuned model
+            'alpha': 1.0,
+            'label': label
+        })
+    return categories
