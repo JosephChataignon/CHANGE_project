@@ -10,24 +10,21 @@ This script compares original and fine-tuned embedding models by:
 4. Generating comprehensive reports
 """
 
-import os
-import sys
-import torch
+import os, sys, torch, json, logging
 import numpy as np
 import pandas as pd
+from typing import Dict, List, Tuple, Optional
+from datetime import datetime
+from dotenv import load_dotenv
 from sklearn.decomposition import PCA
 from sklearn.metrics.pairwise import cosine_similarity
-from sklearn.manifold import TSNE
 import matplotlib.pyplot as plt
 import seaborn as sns
 import plotly.express as px
 from sentence_transformers import SentenceTransformer
 from transformers import AutoModel, AutoTokenizer
-from typing import Dict, List, Tuple, Optional
-import logging
-from datetime import datetime
-import json
-from pathlib import Path
+
+from utils import load_dataset_samples
 
 # Configure logging
 logging.basicConfig(
@@ -41,24 +38,36 @@ class ModelComparator:
     """Class to compare original and fine-tuned embedding models"""
     
     def __init__(self, original_model_path: str, fine_tuned_model_path: str, 
-                 device: str = 'cuda' if torch.cuda.is_available() else 'cpu'):
+                 documents_list: List[str],
+                 device: str = 'cuda' if torch.cuda.is_available() else 'cpu',
+                 sample_size: int = 100, 
+                 dataset_type: str = 'general'):
         """
         Initialize the model comparator
         
         Args:
             original_model_path: Path to original model (HuggingFace model name or local path)
             fine_tuned_model_path: Path to fine-tuned model (local path)
+            documents_list: List of document paths to analyze
             device: Device to use for computation ('cuda' or 'cpu')
+            sample_size: Number of text samples to load for comparison
+            dataset_type: Type of dataset to use ('our' for CHANGE data, 'general' for C4)
         """
         self.original_model_path = original_model_path
         self.fine_tuned_model_path = fine_tuned_model_path
+        self.documents_list = documents_list
         self.device = torch.device(device)
+        self.sample_size = sample_size
+        self.dataset_type = dataset_type
         logger.info(f"Initialized ModelComparator with device: {self.device}")
         
         # Placeholders for analysis results
         self.weight_deltas = {}
         self.embedding_comparison = {}
         self.pca_results = {}
+        self.sample_texts = []
+        
+        # load models
         try:
             self.original_model = SentenceTransformer(self.original_model_path, device=self.device)
             logger.info(f"Original model loaded: {self.original_model_path}")
@@ -67,12 +76,36 @@ class ModelComparator:
         except Exception as e:
             logger.error(f"Error loading models: {e}")
             raise
+        # load data
         try:
             pass #todo: implement data loading here
         except Exception as e:
             logger.error(f"Error loading data: {e}")
             raise
-    
+
+    def load_sample_texts(self, sample_size: int = 100, dataset_type: str = 'general') -> List[str]:
+        """
+        Load sample texts from C4 dataset or CHANGE data
+        
+        Args:
+            sample_size: Number of text samples to load
+            dataset_type: 'our' for CHANGE data or 'general' for C4 dataset
+            
+        Returns:
+            List of text samples
+            
+        Raises:
+            RuntimeError: If sample loading fails
+        """
+        try:
+            logger.info(f"Loading {sample_size} samples from {dataset_type} dataset...")
+            self.sample_texts = load_dataset_samples(sample_size=sample_size, dataset_type=dataset_type)
+            logger.info(f"Successfully loaded {len(self.sample_texts)} sample texts")
+            return self.sample_texts
+        except Exception as e:
+            logger.error(f"Error loading sample texts: {e}")
+            raise RuntimeError(f"Cannot load sample texts: {str(e)}")
+
     def compare_weights(self) -> Dict[str, Dict]:
         """
         Compare weights between original and fine-tuned models
@@ -391,26 +424,44 @@ class ModelComparator:
             logger.error(f"Error creating interactive plot: {e}")
             raise
     
-    def generate_comparison_report(self, report_dir: str = 'comparison_reports') -> Dict:
+    def generate_comparison_report(self, report_dir: str = 'comparison_reports', 
+                                   sample_size: int = 100, 
+                                   dataset_type: str = 'general') -> Dict:
         # Create report directory
         os.makedirs(report_dir, exist_ok=True)
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         
-        # 1. Weight analysis
+        # 1. Load sample texts
+        logger.info("Loading sample texts...")
+        try:
+            sample_texts = self.load_sample_texts(sample_size=sample_size, dataset_type=dataset_type)
+        except RuntimeError as e:
+            logger.error(f"Failed to load sample texts: {e}")
+            # Fallback to default sample texts if available
+            try:
+                from create_sample_data import load_sample_data
+                logger.warning("Falling back to default sample data...")
+                sample_texts = load_sample_data()
+                logger.info(f"Loaded {len(sample_texts)} fallback sample texts")
+            except Exception as fallback_error:
+                logger.error(f"Failed to load fallback sample data: {fallback_error}")
+                raise RuntimeError("Cannot load any sample texts for comparison")
+        
+        # 2. Weight analysis
         logger.info("Performing weight analysis...")
         weight_results = self.compare_weights()
         
-        # 2. Embedding similarity analysis
+        # 3. Embedding similarity analysis
         logger.info("Performing embedding similarity analysis...")
-        similarity_results = self.analyze_embedding_similarity()
+        similarity_results = self.analyze_embedding_similarity(sample_texts)
         
-        # 3. PCA visualization (2D)
+        # 4. PCA visualization (2D)
         logger.info("Performing PCA analysis (2D)...")
-        pca_2d_results = self.pca_visualization(n_components=2)
+        pca_2d_results = self.pca_visualization(sample_texts, n_components=2)
         
-        # 4. PCA visualization (3D)
+        # 5. PCA visualization (3D)
         logger.info("Performing PCA analysis (3D)...")
-        pca_3d_results = self.pca_visualization(n_components=3)
+        pca_3d_results = self.pca_visualization(sample_texts, n_components=3)
         
         # Compile comprehensive report
         report = {
@@ -418,6 +469,8 @@ class ModelComparator:
                 'timestamp': timestamp,
                 'original_model': self.original_model_path,
                 'fine_tuned_model': self.fine_tuned_model_path,
+                'sample_size': len(sample_texts),
+                'dataset_type': dataset_type,
                 'device': str(self.device)
             },
             'weight_analysis': weight_results,
@@ -494,13 +547,22 @@ class ModelComparator:
 
 def main():
     """Main function to run model comparison"""
+    load_dotenv()
     # Example usage - this will be replaced with actual model paths
-    original_model = "sentence-transformers/all-mpnet-base-v2"  # Placeholder
-    fine_tuned_model = "/path/to/fine/tuned/model"  # Placeholder - will be provided later
+    original_model = os.getenv("ORIGINAL_MODEL") 
+    fine_tuned_model = os.getenv("FINETUNED_MODEL")
+    
+    documents_list = [
+        "list_A/2/Competence Oriented Teaching and Learning in Higher Education - Essentials _E-Book_3 Strategies to reduce learning content.txt",
+        "list_A/16/Effective Online Teaching _ Tina Stavredes.txt",
+        "list_B/springer/7/978-3-531-93068-8_6.txt",
+        "list_B/cambridge/1745/defining_teaching_and_learning_professionalism.txt",
+        "list_C/brill/55/37616.txt"
+    ]
     
     try:
         # Initialize comparator
-        comparator = ModelComparator(original_model, fine_tuned_model)
+        comparator = ModelComparator(original_model, fine_tuned_model, documents_list)
         
         # Generate comprehensive report
         comparator.generate_comparison_report()
