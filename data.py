@@ -135,7 +135,7 @@ def get_CHANGE_data_for_sentences(data_type, data_storage,
     
     # Clean documents here ? manage footnotes ?
     
-    # New pipeline: Pass 1 - segment documents
+    # Step 1 - segment documents
     logging.info(f'Processing documents with method={segmentation_method}')
     all_chunks_by_doc = {}  # doc_id -> list of chunks
     
@@ -145,7 +145,7 @@ def get_CHANGE_data_for_sentences(data_type, data_storage,
         doc_id = os.path.relpath(file_path, data_dir)
         
         # Segment document into chunks
-        chunks = segment_document(text, doc_id, segmentation_method=segmentation_method)
+        chunks = segment_document(text, segmentation_method=segmentation_method)
         if len(chunks) < 2:
             logging.warning(f"Only {len(chunks)} chunks in {doc_id}, skipping")
             continue
@@ -154,7 +154,7 @@ def get_CHANGE_data_for_sentences(data_type, data_storage,
         
     logging.info(f'Loaded {len(all_chunks_by_doc)} documents into memory for sampling.')
 
-    # Pass 2: Stream triplets directly to disk using a generator
+    # Step 2: Stream triplets directly to disk using a generator
     def triplet_generator():
         available_docs = list(all_chunks_by_doc.keys())
         for doc_id, chunks in all_chunks_by_doc.items():
@@ -196,8 +196,29 @@ def get_CHANGE_data_for_sentences(data_type, data_storage,
         "test": dev_test_split["test"]
     })
         
+def get_CHANGE_data_by_document(doc_path, data_storage, 
+                                  segmentation_method={"method":"sentence", "chunk_size":6, "overlap":0}, 
+                                  max_chunks=50):
+    assert isinstance(data_storage, str) and len(data_storage) > 0, f"data_storage should be a non-empty string, got '{data_storage}'"
+    full_doc_path = os.path.join(data_storage, "Projekt_Change_LLM/Eduscience_data", doc_path)
+    assert os.path.isfile(full_doc_path), f"Document path {full_doc_path} does not exist or is not a file."
+    logging.info(f'Loading document {doc_path} from root:{data_storage} in Projekt_Change_LLM/Eduscience_data')
+    
+    # Need to add references (author, etc) from spreadsheet
+    
+    # Clean documents here ? manage footnotes ?
+    
+    # segment documents
+    logging.info(f'Processing document with method={segmentation_method}')
+    text = Path(full_doc_path).read_text(encoding='utf-8')
+    chunks = segment_document(text, segmentation_method=segmentation_method)
+    logging.info(f'Loaded {len(chunks)} chunks from document, sampling up to {max_chunks} for output')
+    if len(chunks) > max_chunks:
+        chunks = random.sample(chunks, max_chunks)
+    return chunks
 
-def segment_document(text, doc_id, segmentation_method):
+
+def segment_document(text, segmentation_method):
     """
     Segment a single document into chunks (sentences or groups of sentences).
     returns a list of str : The text chunks from this document
