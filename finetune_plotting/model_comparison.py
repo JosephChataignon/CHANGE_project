@@ -214,18 +214,18 @@ class ModelComparator:
         
         # 2. Embedding similarity analysis
         logger.info("Performing embedding similarity analysis...")
-        data_ours = load_dataset_samples('our_data')
-        data_general = load_dataset_samples('general_data')
+        data_ours = load_dataset_samples('our_data', 5000)
+        data_general = load_dataset_samples('general_data', 5000)
         similarity_results_ours = self.analyze_embedding_similarity(texts=data_ours, label='Our Dataset Embeddings Similarity')
         similarity_results_general = self.analyze_embedding_similarity(texts=data_general, label='General Dataset Embeddings Similarity')
         
         # 3. PCA comparison visualization
         logger.info("Performing PCA comparison analysis...")
-        data_ours = load_dataset_samples('our_data')
-        data_general = load_dataset_samples('general_data')
+        data_ours = load_dataset_samples('our_data', 500)
+        data_general = load_dataset_samples('general_data', 500)
         docs_data = {}
         for i,doc in enumerate(documents_list):
-            doc_data = load_dataset_samples(doc)
+            doc_data = load_dataset_samples(doc, 50)
             docs_data[f'doc_{i}'] = doc_data
         
         # Add general_data to docs_data for comparison
