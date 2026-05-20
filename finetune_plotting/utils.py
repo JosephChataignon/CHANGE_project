@@ -47,26 +47,30 @@ def load_dataset_samples(dataset_type: str, sample_size: int) -> List[str]:
     
     if dataset_type == 'our':
         # Load real CHANGE data for our dataset
-        logger.info(f"Loading CHANGE education data from {data_storage}")
-        dataset = get_CHANGE_data_for_sentences(data_type='education', 
-            data_storage=data_storage,
-            segmentation_method={"method": "sentence", "chunk_size": 6, "overlap": 0},
-            sample_scale=0.00001,  # Small scale for faster loading
-        )
-        # Extract all unique text samples from triplets
-        all_texts = set()
-        for split_name in ['train', 'dev', 'test']:
-            if split_name in dataset:
-                split_data = dataset[split_name]
-                for triplet in split_data:
-                    all_texts.add(triplet['anchor'])
-                    all_texts.add(triplet['positive'])
-                    all_texts.add(triplet['negative'])
-        texts = list(all_texts)
-        
-        assert len(texts) > 0, "No text samples found in CHANGE dataset. "
-        logger.info(f"Loaded {len(texts)} unique text samples from CHANGE education dataset")
-        
+        logger.info(f"Sampling CHANGE education data from {data_storage}")
+        data_dir = os.path.join(data_storage, "Projekt_Change_LLM/Eduscience_data")
+        file_paths = _get_text_file_paths(data_dir)
+        assert len(file_paths) > 0, f"No text files found under {data_dir}"
+
+        random.shuffle(file_paths)
+        texts = []
+        for file_path in file_paths:
+            if len(texts) >= sample_size:
+                break
+
+            remaining = sample_size - len(texts)
+            rel_path = os.path.relpath(file_path, data_dir)
+            chunks = get_CHANGE_data_by_document(
+                rel_path,
+                data_storage,
+                segmentation_method={"method": "sentence", "chunk_size": 6, "overlap": 0},
+                max_chunks=min(remaining, 50),
+            )
+            if chunks:
+                texts.extend(chunks)
+
+        assert len(texts) > 0, "No text samples found in CHANGE dataset."
+        logger.info(f"Loaded {len(texts)} text samples from CHANGE education dataset")
         return texts[:sample_size]
             
         
@@ -101,6 +105,15 @@ def load_dataset_samples(dataset_type: str, sample_size: int) -> List[str]:
                 segmentation_method={"method": "sentence", "chunk_size": 6, "overlap": 0},
                 max_chunks=sample_size )
         return texts
+
+
+def _get_text_file_paths(root_dir: str, extension: str = "txt") -> List[str]:
+    file_paths = []
+    for dirpath, _, filenames in os.walk(root_dir):
+        for filename in filenames:
+            if filename.lower().endswith(f".{extension}"):
+                file_paths.append(os.path.join(dirpath, filename))
+    return file_paths
 
 
 def create_category_plot(transformed_data: Dict, categories: List[Dict], pca, save_path: str = 'visualizations'):

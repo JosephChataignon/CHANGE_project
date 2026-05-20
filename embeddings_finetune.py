@@ -154,7 +154,7 @@ eval_subset_size = 5000
 eval_subset = (eval_dataset.shuffle(seed=42).select(
             range(min(eval_subset_size, len(eval_dataset)))
 ))
-logging.info(f"Eval subset size: {len(eval_subset)} of {len(eval_dataset)}")
+logging.info(f"Eval subset size for intermediate evals: {len(eval_subset)} (full eval set: {len(eval_dataset)})")
 partial_dev_evaluator = None
 if is_main_process:
     partial_dev_evaluator = TripletEvaluator(
