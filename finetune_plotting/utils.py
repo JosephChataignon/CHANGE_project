@@ -203,21 +203,29 @@ def create_categories_for_visualization(label_info: List[str]) -> List[Dict]:
             color = '#ff7f0e'  # Orange-red
         else:
             color = bluish_colors[i % len(bluish_colors)]
-            
-        
-    # Create category entries for base and fine-tuned models
+
+        base_key = f"{label}_base"
+        finetuned_key = f"{label}_finetuned"
+
+        # Create category entries for base and fine-tuned models
         categories.append({
             'name': f'{label}/base',
             'color': color,
             'marker': 'o',  # Circle for base model
             'alpha': 0.6,
-            'label': label
+            'label': label,
+            'model_type': 'base',
+            'base_key': base_key,
+            'finetuned_key': finetuned_key
         })
         categories.append({
             'name': f'{label}/finetuned',
             'color': color,
             'marker': 's',  # Square for fine-tuned model
             'alpha': 1.0,
-            'label': label
+            'label': label,
+            'model_type': 'finetuned',
+            'base_key': base_key,
+            'finetuned_key': finetuned_key
         })
     return categories
