@@ -177,7 +177,7 @@ def create_category_plot(transformed_data: Dict, categories: List[Dict], pca, sa
         
 
 
-def create_categories_for_visualization(self, label_info: List[str]) -> List[Dict]:
+def create_categories_for_visualization(label_info: List[str]) -> List[Dict]:
     """
     Create category definitions for visualization with proper color scheme
     
