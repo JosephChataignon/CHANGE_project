@@ -184,7 +184,7 @@ class ModelComparator:
             transformed_data[key] = pca.transform(embeddings)
 
         # Create visualization with dynamic categories
-        categories = self.create_categories_for_visualization(label_info)
+        categories = create_categories_for_visualization(label_info)
         visualization_file_path = create_category_plot(transformed_data, label, pca)
 
         # Store results (convert numpy arrays to lists for JSON serialization)
