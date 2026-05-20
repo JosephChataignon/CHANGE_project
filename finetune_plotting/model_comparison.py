@@ -185,14 +185,15 @@ class ModelComparator:
 
         # Create visualization with dynamic categories
         categories = create_categories_for_visualization(label_info)
-        visualization_file_path = create_category_plot(transformed_data, label, pca)
+        visualization_file_path = create_category_plot(transformed_data, categories, pca)
 
         # Store results (convert numpy arrays to lists for JSON serialization)
         pca_results = {
             'pca_variance': pca.explained_variance_ratio_.tolist(),
             'categories': categories,
             'sample_sizes': {label: len(data[label]) for label in label_info},
-            'transformed_data': {key: data.tolist() for key, data in transformed_data.items()}
+            'transformed_data': {key: data.tolist() for key, data in transformed_data.items()},
+            'visualization_file': visualization_file_path
         }
 
         self.pca_results = pca_results
