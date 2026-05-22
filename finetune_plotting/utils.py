@@ -174,7 +174,7 @@ def create_category_plot(transformed_data: Dict, categories: List[Dict], pca, sa
     
     logger.info(f"Saved PCA comparison visualization to {filename}")
     return filename
-        
+
 
 
 def create_categories_for_visualization(label_info: List[str]) -> List[Dict]:
@@ -191,9 +191,8 @@ def create_categories_for_visualization(label_info: List[str]) -> List[Dict]:
     
     # Define color schemes
     bluish_colors = [
-        '#1f77b4', '#6baed6', '#9ecae1', '#c6dbef',  # Blues
-        '#21908d', '#4292c6', '#6baed6', '#9ecae1',  # Teals
-        '#3182bd', '#6baed6', '#9ecae1', '#c6dbef'   # More blues
+        "#026ffd", "#55daf4", "#6748f1",
+        '#21908d', "#1618ae", "#6b7dd6"
     ]
     
     for i, label in enumerate(label_info):
@@ -212,7 +211,7 @@ def create_categories_for_visualization(label_info: List[str]) -> List[Dict]:
             'name': f'{label}/base',
             'color': color,
             'marker': 'o',  # Circle for base model
-            'alpha': 0.6,
+            'alpha': 0.5,
             'label': label,
             'model_type': 'base',
             'base_key': base_key,
@@ -222,7 +221,7 @@ def create_categories_for_visualization(label_info: List[str]) -> List[Dict]:
             'name': f'{label}/finetuned',
             'color': color,
             'marker': 's',  # Square for fine-tuned model
-            'alpha': 1.0,
+            'alpha': 0.8,
             'label': label,
             'model_type': 'finetuned',
             'base_key': base_key,

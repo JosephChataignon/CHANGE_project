@@ -69,37 +69,61 @@ class ModelComparator:
         Compare weights between original and fine-tuned models
         
         Returns:
-            Dictionary containing weight comparison metrics for each layer
+            Dictionary containing overall weight comparison metrics
         """
-        weight_deltas = {}
-    
-        # Get state dicts from both models
         original_state = self.original_model.state_dict()
         fine_tuned_state = self.fine_tuned_model.state_dict()
-        
         logger.info(f"Comparing weights across {len(original_state)} layers...")
-        
-        for key in original_state.keys():
-            if key in fine_tuned_state:
-                original_weight = original_state[key]
-                fine_tuned_weight = fine_tuned_state[key]
-                # Only compare tensors (weights, not metadata)
-                if isinstance(original_weight, torch.Tensor) and isinstance(fine_tuned_weight, torch.Tensor):
-                    if original_weight.dtype in [torch.float32, torch.float16, torch.float64]:
-                        delta = fine_tuned_weight - original_weight
-                        metrics = {
-                            'mean_abs_delta': float(torch.mean(torch.abs(delta)).cpu()),
-                            'max_abs_delta': float(torch.max(torch.abs(delta)).cpu()),
-                            'std_delta': float(torch.std(delta).cpu()),
-                            'mean_original': float(torch.mean(original_weight).cpu()),
-                            'mean_fine_tuned': float(torch.mean(fine_tuned_weight).cpu()),
-                            'shape': list(original_weight.shape),
-                            'dtype': str(original_weight.dtype),
-                            'norm_delta': float(torch.norm(delta).cpu()),
-                            'relative_change': float((torch.norm(delta) / (torch.norm(original_weight) + 1e-8)).cpu())
-                        }
-                        weight_deltas[key] = metrics
-                        logger.debug(f"Weight delta for {key}: mean_abs={metrics['mean_abs_delta']:.6f}")
+
+        total_elems, sum_abs_delta, sum_sq_delta, sum_delta = 0, 0.0, 0.0, 0.0 
+        max_abs_delta, sum_original, sum_fine_tuned, sum_original_sq = 0.0, 0.0, 0.0, 0.0
+
+        for key, original_weight in original_state.items():
+            fine_tuned_weight = fine_tuned_state.get(key)
+            if fine_tuned_weight is None:
+                continue
+            if not isinstance(original_weight, torch.Tensor) or not isinstance(fine_tuned_weight, torch.Tensor):
+                continue
+            if original_weight.dtype not in [torch.float32, torch.float16, torch.float64]:
+                continue
+
+            delta = fine_tuned_weight - original_weight
+            abs_delta = delta.abs()
+            elems = delta.numel()
+            total_elems += elems
+            sum_abs_delta += abs_delta.sum().item()
+            sum_sq_delta += (delta ** 2).sum().item()
+            sum_delta += delta.sum().item()
+            max_abs_delta = max(max_abs_delta, abs_delta.max().item())
+            sum_original += original_weight.sum().item()
+            sum_fine_tuned += fine_tuned_weight.sum().item()
+            sum_original_sq += (original_weight ** 2).sum().item()
+
+        weight_deltas = {}
+        if total_elems > 0:
+            mean_abs_delta = sum_abs_delta / total_elems
+            mean_delta = sum_delta / total_elems
+            mean_original = sum_original / total_elems
+            mean_fine_tuned = sum_fine_tuned / total_elems
+            std_delta = max((sum_sq_delta / total_elems) - (mean_delta ** 2), 0.0) ** 0.5
+            norm_delta = sum_sq_delta ** 0.5
+            norm_original = sum_original_sq ** 0.5
+            relative_change = norm_delta / (norm_original + 1e-8)
+
+            weight_deltas = {
+                'overall': {
+                    'mean_abs_delta': mean_abs_delta,
+                    'max_abs_delta': max_abs_delta,
+                    'std_delta': std_delta,
+                    'mean_original': mean_original,
+                    'mean_fine_tuned': mean_fine_tuned,
+                    'total_elements': total_elems,
+                    'norm_delta': norm_delta,
+                    'relative_change': relative_change
+                }
+            }
+            logger.info("Finished weights comparison analysis")
+
         self.weight_deltas = weight_deltas
 
     def analyze_embedding_similarity(self, texts: List[str], label: str, 
@@ -192,7 +216,6 @@ class ModelComparator:
             'pca_variance': pca.explained_variance_ratio_.tolist(),
             'categories': categories,
             'sample_sizes': {label: len(data[label]) for label in label_info},
-            'transformed_data': {key: data.tolist() for key, data in transformed_data.items()},
             'visualization_file': visualization_file_path
         }
 
@@ -253,7 +276,8 @@ class ModelComparator:
                 'pca_results_by_doc': pca_results_by_doc
             }
         }
-        report_filename = os.path.join(report_dir, f'comparison_report_{timestamp}.json')
+        model_name = os.path.basename(self.fine_tuned_model_path)
+        report_filename = os.path.join(report_dir, f'comparison_report_{timestamp}_{model_name}.json')
         with open(report_filename, 'w') as f:
             json.dump(report, f, indent=2)
             
