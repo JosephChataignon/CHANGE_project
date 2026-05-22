@@ -286,12 +286,11 @@ class ModelComparator:
 def main():
     """Main function to run model comparison"""
     load_dotenv()
-    original_model_name = os.getenv("ORIGINAL_MODEL")
+    original_model = os.getenv("ORIGINAL_MODEL")
     fine_tuned_model_name = os.getenv("FINETUNED_MODEL")
     model_dir = os.path.dirname(os.getenv("MODELS_PATH"))
-    assert original_model_name is not None, "ORIGINAL_MODEL environment variable not set"
+    assert original_model is not None, "ORIGINAL_MODEL environment variable not set"
     assert fine_tuned_model_name is not None, "FINETUNED_MODEL environment variable not set"
-    original_model = os.path.join(model_dir, original_model_name)
     fine_tuned_model = os.path.join(model_dir, fine_tuned_model_name)
     
     documents_list = [
