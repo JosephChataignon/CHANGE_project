@@ -1,0 +1,241 @@
+{
+  "metadata": {
+    "original_model": "Qwen/Qwen3-Embedding-0.6B",
+    "fine_tuned_model": "/home/joseph/CHANGE_project/saved_models/Qwen-Qwen3-Embedding-0.6B_finetuned-on_education-scale0.1_2026-04-27 23:00:13.896472",
+    "device": "cuda"
+  },
+  "weight_analysis": {
+    "overall": {
+      "mean_abs_delta": 0.002098390224261446,
+      "max_abs_delta": 0.6203347444534302,
+      "std_delta": 0.002992935084261076,
+      "mean_original": 0.0002494302463648926,
+      "mean_fine_tuned": 0.0002292531749832297,
+      "total_elements": 595776512,
+      "norm_delta": 73.05481660281029,
+      "relative_change": 0.05046810348566561
+    }
+  },
+  "embedding_similarity": {
+    "our_dataset": {
+      "label": "Our Dataset Embeddings Similarity",
+      "mean_cosine_similarity": 0.06899141520261765,
+      "std_cosine_similarity": 0.07127346843481064,
+      "min_cosine_similarity": -0.1549472212791443,
+      "max_cosine_similarity": 0.31149911880493164,
+      "median_cosine_similarity": 0.07455527782440186,
+      "sample_size": 5000,
+      "similarity_distribution": {
+        "q25": 0.022325944155454636,
+        "q75": 0.11896853148937225,
+        "q90": 0.15738068521022797
+      }
+    },
+    "general_dataset": {
+      "label": "General Dataset Embeddings Similarity",
+      "mean_cosine_similarity": 0.05326361954212189,
+      "std_cosine_similarity": 0.06768452376127243,
+      "min_cosine_similarity": -0.23111140727996826,
+      "max_cosine_similarity": 0.2580009698867798,
+      "median_cosine_similarity": 0.055410582572221756,
+      "sample_size": 4985,
+      "similarity_distribution": {
+        "q25": 0.01097915694117546,
+        "q75": 0.10036829113960266,
+        "q90": 0.13911211490631104
+      }
+    }
+  },
+  "pca": {
+    "pca_results_all": {
+      "pca_variance": [
+        0.13331876695156097,
+        0.11789693683385849
+      ],
+      "categories": [
+        {
+          "name": "general_data/base",
+          "color": "#ff7f0e",
+          "marker": "o",
+          "alpha": 0.5,
+          "label": "general_data",
+          "model_type": "base",
+          "base_key": "general_data_base",
+          "finetuned_key": "general_data_finetuned"
+        },
+        {
+          "name": "general_data/finetuned",
+          "color": "#ff7f0e",
+          "marker": "s",
+          "alpha": 0.8,
+          "label": "general_data",
+          "model_type": "finetuned",
+          "base_key": "general_data_base",
+          "finetuned_key": "general_data_finetuned"
+        },
+        {
+          "name": "our_data/base",
+          "color": "#55daf4",
+          "marker": "o",
+          "alpha": 0.5,
+          "label": "our_data",
+          "model_type": "base",
+          "base_key": "our_data_base",
+          "finetuned_key": "our_data_finetuned"
+        },
+        {
+          "name": "our_data/finetuned",
+          "color": "#55daf4",
+          "marker": "s",
+          "alpha": 0.8,
+          "label": "our_data",
+          "model_type": "finetuned",
+          "base_key": "our_data_base",
+          "finetuned_key": "our_data_finetuned"
+        }
+      ],
+      "sample_sizes": {
+        "general_data": 200,
+        "our_data": 200
+      },
+      "visualization_file": "/home/joseph/CHANGE_project/finetune_plotting/visualizations/pca_comparison_20260522_231050.png"
+    },
+    "pca_results_by_doc": {
+      "pca_variance": [
+        0.14683108031749725,
+        0.12374222278594971
+      ],
+      "categories": [
+        {
+          "name": "doc_0/base",
+          "color": "#026ffd",
+          "marker": "o",
+          "alpha": 0.5,
+          "label": "doc_0",
+          "model_type": "base",
+          "base_key": "doc_0_base",
+          "finetuned_key": "doc_0_finetuned"
+        },
+        {
+          "name": "doc_0/finetuned",
+          "color": "#026ffd",
+          "marker": "s",
+          "alpha": 0.8,
+          "label": "doc_0",
+          "model_type": "finetuned",
+          "base_key": "doc_0_base",
+          "finetuned_key": "doc_0_finetuned"
+        },
+        {
+          "name": "doc_1/base",
+          "color": "#55daf4",
+          "marker": "o",
+          "alpha": 0.5,
+          "label": "doc_1",
+          "model_type": "base",
+          "base_key": "doc_1_base",
+          "finetuned_key": "doc_1_finetuned"
+        },
+        {
+          "name": "doc_1/finetuned",
+          "color": "#55daf4",
+          "marker": "s",
+          "alpha": 0.8,
+          "label": "doc_1",
+          "model_type": "finetuned",
+          "base_key": "doc_1_base",
+          "finetuned_key": "doc_1_finetuned"
+        },
+        {
+          "name": "doc_2/base",
+          "color": "#6748f1",
+          "marker": "o",
+          "alpha": 0.5,
+          "label": "doc_2",
+          "model_type": "base",
+          "base_key": "doc_2_base",
+          "finetuned_key": "doc_2_finetuned"
+        },
+        {
+          "name": "doc_2/finetuned",
+          "color": "#6748f1",
+          "marker": "s",
+          "alpha": 0.8,
+          "label": "doc_2",
+          "model_type": "finetuned",
+          "base_key": "doc_2_base",
+          "finetuned_key": "doc_2_finetuned"
+        },
+        {
+          "name": "doc_3/base",
+          "color": "#21908d",
+          "marker": "o",
+          "alpha": 0.5,
+          "label": "doc_3",
+          "model_type": "base",
+          "base_key": "doc_3_base",
+          "finetuned_key": "doc_3_finetuned"
+        },
+        {
+          "name": "doc_3/finetuned",
+          "color": "#21908d",
+          "marker": "s",
+          "alpha": 0.8,
+          "label": "doc_3",
+          "model_type": "finetuned",
+          "base_key": "doc_3_base",
+          "finetuned_key": "doc_3_finetuned"
+        },
+        {
+          "name": "doc_4/base",
+          "color": "#1618ae",
+          "marker": "o",
+          "alpha": 0.5,
+          "label": "doc_4",
+          "model_type": "base",
+          "base_key": "doc_4_base",
+          "finetuned_key": "doc_4_finetuned"
+        },
+        {
+          "name": "doc_4/finetuned",
+          "color": "#1618ae",
+          "marker": "s",
+          "alpha": 0.8,
+          "label": "doc_4",
+          "model_type": "finetuned",
+          "base_key": "doc_4_base",
+          "finetuned_key": "doc_4_finetuned"
+        },
+        {
+          "name": "general_data/base",
+          "color": "#ff7f0e",
+          "marker": "o",
+          "alpha": 0.5,
+          "label": "general_data",
+          "model_type": "base",
+          "base_key": "general_data_base",
+          "finetuned_key": "general_data_finetuned"
+        },
+        {
+          "name": "general_data/finetuned",
+          "color": "#ff7f0e",
+          "marker": "s",
+          "alpha": 0.8,
+          "label": "general_data",
+          "model_type": "finetuned",
+          "base_key": "general_data_base",
+          "finetuned_key": "general_data_finetuned"
+        }
+      ],
+      "sample_sizes": {
+        "doc_0": 30,
+        "doc_1": 30,
+        "doc_2": 30,
+        "doc_3": 30,
+        "doc_4": 30,
+        "general_data": 200
+      },
+      "visualization_file": "/home/joseph/CHANGE_project/finetune_plotting/visualizations/pca_comparison_20260522_231106.png"
+    }
+  }
+}
