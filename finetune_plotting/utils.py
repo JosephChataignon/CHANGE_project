@@ -77,6 +77,7 @@ def load_dataset_samples(dataset_type: str, sample_size: int) -> List[str]:
     elif dataset_type == 'general':
         # Load AllenAI C4 dataset for general dataset
         logger.info("Loading AllenAI C4 dataset (English and German subsets)")
+        max_chars = 2000
         
         # Load English and German subsets in streaming mode
         en_dataset = load_dataset("allenai/c4", "en", streaming=True)
@@ -88,8 +89,10 @@ def load_dataset_samples(dataset_type: str, sample_size: int) -> List[str]:
             # Take samples from each language
             sampled = dataset.take(sample_size // 2)  # Half from each language
             for example in sampled:
-                if 'text' in example and len(example['text'].strip()) > 100:
-                    samples.append(example['text'].strip())
+                if 'text' in example:
+                    text = example['text'].strip()
+                    if len(text) > 100:
+                        samples.append(text[:max_chars])
         
         # Shuffle and return requested number
         random.shuffle(samples)
