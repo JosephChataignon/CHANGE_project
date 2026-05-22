@@ -245,11 +245,11 @@ class ModelComparator:
         
         # 3. PCA comparison visualization
         logger.info("Performing PCA comparison analysis...")
-        data_ours = load_dataset_samples('our', 500)
-        data_general = load_dataset_samples('general', 500)
+        data_ours = load_dataset_samples('our', 200)
+        data_general = load_dataset_samples('general', 200)
         docs_data = {}
         for i,doc in enumerate(documents_list):
-            doc_data = load_dataset_samples(doc, 50)
+            doc_data = load_dataset_samples(doc, 30)
             docs_data[f'doc_{i}'] = doc_data
         
         # merge general_data to docs_data for comparison
