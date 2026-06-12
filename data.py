@@ -199,6 +199,7 @@ def get_CHANGE_data_for_sentences(data_type, data_storage,
 def get_CHANGE_data_by_document(doc_path, data_storage, 
                                   segmentation_method={"method":"sentence", "chunk_size":6, "overlap":0}, 
                                   max_chunks=50):
+    '''Randomly samples up to max_chunks chunks from the document at doc_path'''
     assert isinstance(data_storage, str) and len(data_storage) > 0, f"data_storage should be a non-empty string, got '{data_storage}'"
     full_doc_path = os.path.join(data_storage, "Projekt_Change_LLM/Eduscience_data", doc_path)
     assert os.path.isfile(full_doc_path), f"Document path {full_doc_path} does not exist or is not a file."
@@ -217,6 +218,42 @@ def get_CHANGE_data_by_document(doc_path, data_storage,
         chunks = random.sample(chunks, max_chunks)
     return chunks
 
+def get_CHANGE_data_random_samples(sample_size, data_storage):
+    assert data_storage is not None, "DATA_STORAGE environment variable not set"
+    logging.info(f"Sampling CHANGE education data from {data_storage}")
+    
+    data_dir = os.path.join(data_storage, "Projekt_Change_LLM/Eduscience_data")
+    file_paths = _get_text_file_paths(data_dir)
+    assert len(file_paths) > 0, f"No text files found under {data_dir}"
+
+    random.shuffle(file_paths)
+    texts = []
+    for file_path in file_paths:
+        if len(texts) >= sample_size:
+            break
+
+        remaining = sample_size - len(texts)
+        rel_path = os.path.relpath(file_path, data_dir)
+        chunks = get_CHANGE_data_by_document(
+            rel_path,
+            data_storage,
+            segmentation_method={"method": "sentence", "chunk_size": 6, "overlap": 0},
+            max_chunks=min(remaining, 10),
+        )
+        if chunks:
+            texts.extend(chunks)
+
+    assert len(texts) > 0, "No text samples found in CHANGE dataset."
+    logging.info(f"Loaded {len(texts)} text samples from CHANGE education dataset")
+    return texts[:sample_size]
+
+def _get_text_file_paths(root_dir: str, extension: str = "txt"):
+    file_paths = []
+    for dirpath, _, filenames in os.walk(root_dir):
+        for filename in filenames:
+            if filename.lower().endswith(f".{extension}"):
+                file_paths.append(os.path.join(dirpath, filename))
+    return file_paths
 
 def segment_document(text, segmentation_method):
     """

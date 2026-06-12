@@ -12,7 +12,7 @@ from transformers.integrations import TensorBoardCallback
 
 
 # Setup the logging module
-def setup_logging(config, root_logger, transformers_logger):
+def setup_logging(config, root_logger, transformers_logger=None):
     date_str = datetime.now().isoformat()[:19]
     filename = f"{config['LOGS_FOLDER']}/{date_str}_{os.path.basename(__file__)}.log"
     ## Setup the logging module
@@ -38,11 +38,12 @@ def setup_logging(config, root_logger, transformers_logger):
         out_handler.setFormatter(log_format)
         root_logger.addHandler(out_handler)
         # logs from transformers module
-        transformers_logger.handlers = []
-        transformers_handler = logging.FileHandler(filename)
-        transformers_handler.setLevel(logging.DEBUG)
-        transformers_handler.setFormatter(log_format)
-        transformers_logger.addHandler(transformers_handler)
+        if transformers_logger is not None:
+            transformers_logger.handlers = []
+            transformers_handler = logging.FileHandler(filename)
+            transformers_handler.setLevel(logging.DEBUG)
+            transformers_handler.setFormatter(log_format)
+            transformers_logger.addHandler(transformers_handler)
         # log basic info
         logging.info(f"Detailed logs are written to: {filename}")
         log_system_info()

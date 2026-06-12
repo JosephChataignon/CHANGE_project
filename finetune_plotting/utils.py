@@ -20,7 +20,7 @@ from datasets import load_dataset
 
 # Add parent directory to path to import data.py
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
-from data import get_CHANGE_data_for_sentences
+from data import get_CHANGE_data_random_samples
 from data import get_CHANGE_data_by_document
 
 # Configure logging for this module
@@ -46,33 +46,7 @@ def load_dataset_samples(dataset_type: str, sample_size: int) -> List[str]:
     assert data_storage is not None, "DATA_STORAGE environment variable not set"
     
     if dataset_type == 'our':
-        # Load real CHANGE data for our dataset
-        logger.info(f"Sampling CHANGE education data from {data_storage}")
-        data_dir = os.path.join(data_storage, "Projekt_Change_LLM/Eduscience_data")
-        file_paths = _get_text_file_paths(data_dir)
-        assert len(file_paths) > 0, f"No text files found under {data_dir}"
-
-        random.shuffle(file_paths)
-        texts = []
-        for file_path in file_paths:
-            if len(texts) >= sample_size:
-                break
-
-            remaining = sample_size - len(texts)
-            rel_path = os.path.relpath(file_path, data_dir)
-            chunks = get_CHANGE_data_by_document(
-                rel_path,
-                data_storage,
-                segmentation_method={"method": "sentence", "chunk_size": 6, "overlap": 0},
-                max_chunks=min(remaining, 50),
-            )
-            if chunks:
-                texts.extend(chunks)
-
-        assert len(texts) > 0, "No text samples found in CHANGE dataset."
-        logger.info(f"Loaded {len(texts)} text samples from CHANGE education dataset")
-        return texts[:sample_size]
-            
+        return get_CHANGE_data_random_samples(sample_size, data_storage)
         
     elif dataset_type == 'general':
         # Load AllenAI C4 dataset for general dataset
