@@ -82,10 +82,10 @@ if __name__ == "__main__":
     synthetic_data = generate_synthetic_data(size)
     
     # Save to csv in (query, relevant_sentence) format
-    writer = csv.writer(open("synthetic_data.csv", 'w', newline=''))
-    writer.writerow(['query', 'relevant_sentence'])
-    for query, sentence in synthetic_data:
-        writer.writerow([query, sentence]) 
-    writer.close()
+    with open("synthetic_data.csv", 'w', newline='') as f:
+        writer = csv.writer(f)
+        writer.writerow(['query', 'relevant_sentence'])
+        for query, sentence in synthetic_data:
+            writer.writerow([query, sentence]) 
 
 
