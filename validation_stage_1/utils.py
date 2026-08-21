@@ -78,8 +78,8 @@ def query_anyllm(prompt, llm):
     if llm == "gpt5":
         anyllm_config = {'provider': 'openai', 'model': 'gpt-5', 'api_key': os.getenv('OPENAI_API_KEY')}
     elif llm == "deepseekR1":
-        # Moved to query_ollama until bug is fixed in any-llm
-        # anyllm_config = {'provider': 'ollama', 'model': 'deepseek-1.5', 'api_base': 'http://130.92.59.240:11434'} # TODO: check syntax
+        # Moved to query_ollama until bug is fixed in any-llm #TODO: keep an eye on any-llm updates
+        # anyllm_config = {'provider': 'ollama', 'model': 'deepseek-1.5', 'api_base': 'http://130.92.59.240:11434'}
         return query_ollama(prompt, model='deepseek-r1:70b')
     
     response = completion(

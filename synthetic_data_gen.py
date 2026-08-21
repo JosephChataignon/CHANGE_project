@@ -37,8 +37,9 @@ def _call_to_LLM(llm, prompt):
 
 def filter_sample(llm, sample):
     response = _call_to_LLM(llm, f"""Is the following text a paragraph of text 
-    for educational BLABLABLA TODO
-    purposes? Answer with 'yes' or 'no'. <TEXT_START> {sample} <TEXT_END>""")
+    related to education science, or contain facts about education in general ?
+    Answer with 'yes' or 'no' only, do not include any explanations or punctuation. 
+    <TEXT_START> {sample} <TEXT_END>""")
     return response.strip().lower() == 'yes'
 
 def generate_query(llm, sample):
