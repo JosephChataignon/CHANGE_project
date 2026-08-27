@@ -44,8 +44,11 @@ def filter_sample(llm, sample):
 
 def generate_query(llm, sample):
     response = _call_to_LLM(llm, f"""Generate a question that could be answered
-    by the following text: <TEXT_START> {sample} <TEXT_END>. The question should be placed
-    between <QUERY_START> and <QUERY_END> tags.""")
+    by the following text: <TEXT_START> {sample} <TEXT_END>. 
+    The question must be answerable from the text, but not overly specific. Do not include the answer in the question.
+    Do not introduce facts that are not in the text. The wording should not be exactly the same as in the text, but it should be clear that the answer can be found in the text.
+    Avoid yes/no questions.
+    The question you generate should be placed between <QUERY_START> and <QUERY_END> tags.""")
     return response.split('<QUERY_START>')[1].split('<QUERY_END>')[0].strip()
 
 def generate_synthetic_data(size):
