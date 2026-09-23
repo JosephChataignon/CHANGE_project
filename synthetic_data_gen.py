@@ -9,10 +9,14 @@ from logging_utils import setup_logging
 
 
 
+# Use bigger chunks than the default (chunk_size=6) so each generated question has more
+# context to be answerable from. Adjust chunk_size here if needed.
+SEGMENTATION_METHOD = {"method": "sentence", "chunk_size": 24, "overlap": 3}
+
 def load_samples(sample_size: int):
     data_storage = config['DATA_STORAGE']
     assert data_storage is not None, "DATA_STORAGE environment variable not set"
-    return get_CHANGE_data_random_samples(sample_size, data_storage)
+    return get_CHANGE_data_random_samples(sample_size, data_storage, segmentation_method=SEGMENTATION_METHOD)
 
 def _initialize_llm():
     provider = config.get('llm_provider')

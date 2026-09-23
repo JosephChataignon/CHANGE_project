@@ -218,9 +218,11 @@ def get_CHANGE_data_by_document(doc_path, data_storage,
         chunks = random.sample(chunks, max_chunks)
     return chunks
 
-def get_CHANGE_data_random_samples(sample_size, data_storage):
+def get_CHANGE_data_random_samples(sample_size, data_storage, 
+                                   segmentation_method={"method": "sentence", "chunk_size": 6, "overlap": 0}):
     assert data_storage is not None, "DATA_STORAGE environment variable not set"
-    logging.info(f"Sampling CHANGE education data from {data_storage}")
+    logging.info(f"Sampling CHANGE education data from {data_storage} "
+                 f"with segmentation_method={segmentation_method}")
     
     data_dir = os.path.join(data_storage, "Projekt_Change_LLM/Eduscience_data")
     file_paths = _get_text_file_paths(data_dir)
@@ -237,7 +239,7 @@ def get_CHANGE_data_random_samples(sample_size, data_storage):
         chunks = get_CHANGE_data_by_document(
             rel_path,
             data_storage,
-            segmentation_method={"method": "sentence", "chunk_size": 6, "overlap": 0},
+            segmentation_method=segmentation_method,
             max_chunks=min(remaining, 10),
         )
         if chunks:
