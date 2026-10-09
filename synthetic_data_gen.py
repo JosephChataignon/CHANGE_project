@@ -1,7 +1,7 @@
 
 import sys, logging, csv
 from datetime import datetime
-from dotenv import load_dotenv, dotenv_values
+from dotenv import dotenv_values
 from any_llm import AnyLLM
 
 from data import get_CHANGE_data_random_samples
@@ -56,8 +56,9 @@ def filter_queries(llm, query, sample):
 def generate_query(llm, sample):
     response = _call_to_LLM(llm, f"""Generate a question that could be answered
     by the following text: <TEXT_START> {sample} <TEXT_END>. 
-    The question must be answerable from the text, but not overly specific. Do not include the answer in the question.
+    The question must beself-contained and answerable from the text, but not overly specific. Do not include the answer in the question.
     Do not introduce facts that are not in the text. The wording should not be exactly the same as in the text, but it should be clear that the answer can be found in the text.
+    Do not refer to the text as "the passage", "the text", or "this extract"; write a self-contained question that makes sense without the source being mentioned.
     Avoid yes/no questions.
     The question you generate should be placed between <QUESTION_START> and <QUESTION_END> tags.""")
     return response.split('<QUESTION_START>')[1].split('<QUESTION_END>')[0].split('</QUESTION_END>')[0].strip() #in practice, llm sometimes adds a </QUESTION_END> tag
@@ -114,4 +115,3 @@ if __name__ == "__main__":
         for query, sentence in synthetic_data:
             writer.writerow([query, sentence]) 
     logging.info("Saved synthetic data to csv file: " + filepath)
-
