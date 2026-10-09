@@ -32,7 +32,7 @@ def _call_to_LLM(llm, prompt):
     response = llm.completion(
         model=model_name,
         messages=[
-            {"role": "system", "content": "You are a RAG system."},
+            {"role": "system", "content": "You are an expert in text classification and question generation."},
             {"role": "user", "content": prompt}
         ],
         stream=False,
@@ -44,7 +44,14 @@ def filter_sample(llm, sample):
     related to education science, or contain facts about education in general ?
     Answer with 'yes' or 'no' only, do not include any explanations or punctuation. 
     <TEXT_START> {sample} <TEXT_END>""")
-    return response.strip().lower() == 'yes'
+    return response.replace("'","").strip().lower() == 'yes'
+
+def filter_queries(llm, query, sample):
+    response = _call_to_LLM(llm, f"""Is the following question answerable from the text below ?
+    Answer with 'yes' or 'no' only, do not include any explanations or punctuation. 
+    <TEXT_START> {sample} <TEXT_END>
+    <QUESTION_START> {query} <QUESTION_END>""")
+    return response.replace("'","").strip().lower() == 'yes'
 
 def generate_query(llm, sample):
     response = _call_to_LLM(llm, f"""Generate a question that could be answered
@@ -52,11 +59,12 @@ def generate_query(llm, sample):
     The question must be answerable from the text, but not overly specific. Do not include the answer in the question.
     Do not introduce facts that are not in the text. The wording should not be exactly the same as in the text, but it should be clear that the answer can be found in the text.
     Avoid yes/no questions.
-    The question you generate should be placed between <QUERY_START> and <QUERY_END> tags.""")
-    return response.split('<QUERY_START>')[1].split('<QUERY_END>')[0].strip()
+    The question you generate should be placed between <QUESTION_START> and <QUESTION_END> tags.""")
+    return response.split('<QUESTION_START>')[1].split('<QUESTION_END>')[0].split('</QUESTION_END>')[0].strip() #in practice, llm sometimes adds a </QUESTION_END> tag
 
 def generate_synthetic_data(size):
     # 1. Load samples and initialize LLM
+    logging.info("starting to load text samples")
     samples = load_samples(size)
     llm = _initialize_llm()
     # 2. Filter samples
@@ -66,15 +74,21 @@ def generate_synthetic_data(size):
     for sample in filtered_samples:
         query = generate_query(llm, sample)
         if query and len(query) > 10:
-            data.append((query, sample))
+            if filter_queries(llm, query, sample):
+                data.append((query, sample))
 
     return data
 
 
 
 if __name__ == "__main__":
-    ## Load argument
-    size = int(sys.argv[1]) if len(sys.argv) > 1 else 1000
+    ## Load arguments
+    try:
+        size = int(sys.argv[1]) 
+        filename = str(sys.argv[2])
+    except (IndexError, ValueError):
+        print("Usage: python script.py <size> <filename>")
+        sys.exit(1)
     ## Load environment variables
     env_file = '.env' # for interactive sessions change to the correct path
     config  = dotenv_values(env_file)
@@ -87,13 +101,17 @@ if __name__ == "__main__":
     setup_logging(config, root_logger)
     
     # Generate synthetic data
+    logging.info(f"Starting generation of {size} synthetic data samples...")
     synthetic_data = generate_synthetic_data(size)
+    logging.info(f"Finished generation of synthetic data samples in {datetime.now() - start_time}.")
+    logging.info(f"Generated {len(synthetic_data)} out of {size} synthetic data samples (difference is due to filtering incorrect samples)")
     
     # Save to csv in (query, relevant_sentence) format
-    with open("synthetic_data.csv", 'w', newline='') as f:
+    filepath = "validation_stage_2/"+filename+".csv"
+    with open(filepath, 'w', newline='') as f:
         writer = csv.writer(f)
         writer.writerow(['query', 'relevant_sentence'])
         for query, sentence in synthetic_data:
             writer.writerow([query, sentence]) 
-
+    logging.info("Saved synthetic data to csv file: " + filepath)
 

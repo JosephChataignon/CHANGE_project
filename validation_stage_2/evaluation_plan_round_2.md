@@ -28,6 +28,7 @@ per chunk - ingestion was 20 sentences - 3 overlap) to get more context.
 We do NOT export a document reference: matching a retrieved source back to the original will be done
 by text overlap against the stored chunk (the `relevant_sentence` column), not by document id.
 TODO: run the synthetic data script to make a few hundred samples.
+TODO: make sure synthetic questions are the right level of specificity (currently a bit vague). Maybe add context of the books. -seems better with qwen3.8
 
 ### II.B. Evaluate search on synthetic data
 
