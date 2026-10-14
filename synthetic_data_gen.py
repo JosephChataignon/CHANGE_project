@@ -29,21 +29,27 @@ def _initialize_llm():
 
 def _call_to_LLM(llm, prompt):
     model_name = config.get('llm_model')
-    response = llm.completion(
-        model=model_name,
-        messages=[
-            {"role": "system", "content": "You are an expert in text classification and question generation."},
-            {"role": "user", "content": prompt}
-        ],
-        stream=False,
-    )
-    return response.choices[0].message.content
+    try:
+        response = llm.completion(
+            model=model_name,
+            messages=[
+                {"role": "system", "content": "You are an expert in text classification and question generation."},
+                {"role": "user", "content": prompt}
+            ],
+            stream=False,
+        )
+        return response.choices[0].message.content
+    except Exception as e:
+        logging.warning(f"LLM call failed, skipping this sample: {e}")
+        return None
 
 def filter_sample(llm, sample):
     response = _call_to_LLM(llm, f"""Is the following text a paragraph of text 
     related to education science, or contain facts about education in general ?
     Answer with 'yes' or 'no' only, do not include any explanations or punctuation. 
     <TEXT_START> {sample} <TEXT_END>""")
+    if response is None:
+        return False
     return response.replace("'","").strip().lower() == 'yes'
 
 def filter_queries(llm, query, sample):
@@ -51,6 +57,8 @@ def filter_queries(llm, query, sample):
     Answer with 'yes' or 'no' only, do not include any explanations or punctuation. 
     <TEXT_START> {sample} <TEXT_END>
     <QUESTION_START> {query} <QUESTION_END>""")
+    if response is None:
+        return False
     return response.replace("'","").strip().lower() == 'yes'
 
 def generate_query(llm, sample):
@@ -61,7 +69,13 @@ def generate_query(llm, sample):
     Do not refer to the text as "the passage", "the text", or "this extract"; write a self-contained question that makes sense without the source being mentioned.
     Avoid yes/no questions.
     The question you generate should be placed between <QUESTION_START> and <QUESTION_END> tags.""")
-    return response.split('<QUESTION_START>')[1].split('<QUESTION_END>')[0].split('</QUESTION_END>')[0].strip() #in practice, llm sometimes adds a </QUESTION_END> tag
+    if response is None:
+        return None
+    try:
+        return response.split('<QUESTION_START>')[1].split('<QUESTION_END>')[0].split('</QUESTION_END>')[0].strip() #in practice, llm sometimes adds a </QUESTION_END> tag
+    except IndexError:
+        logging.warning("Could not parse QUERY tags from LLM response, skipping this sample")
+        return None
 
 def generate_synthetic_data(size):
     # 1. Load samples and initialize LLM
