@@ -40,7 +40,9 @@ synthetic data, we match by text overlap between each retrieved source and the o
 We'll make a distribution plot of overlap between retrieved and original, then chose the threshold for when overlap counts as the same document. 
 We should measure top-1, top-5 and top-10 matches. We will run this with various fine-tuned and 
 non-fine-tuned models.
-TODO: write script
+TODO: test script
+TODO: use distribution plot to chose overlap threshold
+TODO: Run script with various embedding models loaded, finetuned vs non-finetuned - deduct which to use for human eval
 
 ## III. Qualitative evaluation
 

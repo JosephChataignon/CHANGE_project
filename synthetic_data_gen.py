@@ -1,5 +1,5 @@
 
-import sys, logging, csv
+import sys, logging, csv, tqdm
 from datetime import datetime
 from dotenv import dotenv_values
 from any_llm import AnyLLM
@@ -86,7 +86,7 @@ def generate_synthetic_data(size):
     filtered_samples = [sample for sample in samples if filter_sample(llm, sample)]
     # 3. Generate queries
     data = []
-    for sample in filtered_samples:
+    for sample in tqdm.tqdm(filtered_samples, desc="Generating samples"):
         query = generate_query(llm, sample)
         if query and len(query) > 10:
             if filter_queries(llm, query, sample):
