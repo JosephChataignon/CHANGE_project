@@ -45,6 +45,7 @@ from tqdm import tqdm
 # 'relevant_sentence'. Change to the actual path once the synthetic data is generated.
 SYNTHETIC_DATA_PATH = "/mnt/wbkolleg_dh_1/Projekt_Change_LLM/Eduscience_data/SyntheticQA/synthetic_data_qwen3-8-oct14.csv"
 
+QUERY_AUGMENTATION = True # "True" or "False" (whether to use FRAG's query augmentation or not)
 TOP_KS = (1, 5, 10)   # ranks at which we measure hits
 N_RESULTS = max(TOP_KS)  # number of sources to request (>= max(TOP_KS))
 
@@ -80,7 +81,7 @@ def overlap_score(original, retrieved):
 def evaluate_pair(query, relevant_sentence):
     """Run one synthetic pair through the search API. Returns per-rank overlaps."""
     response = requests.post("http://change.dh.unibe.ch/api/search/", 
-                             json={"query": query, "n_results": N_RESULTS},
+                             json={"query": query, "n_results": N_RESULTS, "query_augmentation": QUERY_AUGMENTATION},
                              timeout=120).json()
     retrieved_texts = [doc["content"] for doc in response["documents"]]
     return [overlap_score(relevant_sentence, text) for text in retrieved_texts]
