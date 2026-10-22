@@ -37,12 +37,11 @@ We then check whether the original chunk is among the retrieved sources, and at 
 the documents returned by FRAG may be chunked differently from how we chunked them when generating
 synthetic data, we match by text overlap between each retrieved source and the original
 `relevant_sentence` rather than by document reference.
-We'll make a distribution plot of overlap between retrieved and original, then chose the threshold for when overlap counts as the same document. 
+We'll made a distribution plot of overlap between retrieved and original, then chose the threshold for when overlap counts as the same document (50% seems a good split).
 We should measure top-1, top-5 and top-10 matches. We will run this with various fine-tuned and 
 non-fine-tuned models.
-TODO: test script
-TODO: use distribution plot to chose overlap threshold
-TODO: Run script with various embedding models loaded, finetuned vs non-finetuned - deduct which to use for human eval
+TODO: Run script with various embedding models loaded, finetuned vs non-finetuned - deduct which to use for human eval.
+See progress in Models_and_db_state.md
 
 ## III. Qualitative evaluation
 
