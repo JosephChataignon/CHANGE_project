@@ -32,36 +32,45 @@ eduscience-data_2026-02-20_qwen3emb0-6B.db
 eduscience_data_2026-02-26_19-30-01_Qwen_Qwen3-Embedding-0.6B.db
 eduscience_data_2026-02-26_19-35-01_Qwen_Qwen3-Embedding-8B.db
 eduscience_data_2026-03-12_19-40-01_nvidia_llama-embed-nemotron-8b.db
-missing: microsoft/harrier-oss-v1-0.6b
-
+eduscience_data_2026-10-22_16-15-01_microsoft_harrier-oss-v1-0.6b.db
 
 ### finetuned
 eduscience_data_2026-04-15_13-30-01__home_change_finetuned-models_sentence-transformers-all-MiniLM-L6-v2_finetuned-on_education-scale0.0001_2026-02-27_12:00:13.175118.db
 eduscience_data_2026-04-15_10-15-02__home_change_finetuned-models_sentence-transformers-all-MiniLM-L6-v2_finetuned-on_education-scale0.1_2026-02-27_03:00:15.216663.db
-missing: scale 1 and 10
+eduscience_data_2026-10-22_16-30-01__home_change_finetuned-models_sentence-transformers-all-MiniLM-L6-v2_finetuned-on_education-scale1_2026-06-12_15:00:16.897693.db
+eduscience_data_2026-10-22_17-15-01__home_change_finetuned-models_sentence-transformers-all-MiniLM-L6-v2_finetuned-on_education-scale10_2026-04-09_04:00:13.860417.db
 eduscience_data_2026-04-15_12-00-02__home_change_finetuned-models_sentence-transformers-all-mpnet-base-v2_finetuned-on_education-scale0.0001_2026-02-27_13:00:46.275991.db
 eduscience_data_2026-04-15_14-30-02__home_change_finetuned-models_sentence-transformers-all-mpnet-base-v2_finetuned-on_education-scale0.1_2026-02-27_04:00:13.311469.db
 missing: scale 1 (unavailable)
-missing: Qwen models
+eduscience_data_2026-10-22_17-45-02__home_change_finetuned-models_Qwen-Qwen3-Embedding-0.6B_finetuned-on_education-scale0.0001_2026-04-27_13:00:13.278216.db
+eduscience_data_2026-10-22_19-30-01__home_change_finetuned-models_Qwen-Qwen3-Embedding-0.6B_finetuned-on_education-scale0.1_2026-04-27_23:00:13.896472.db
+eduscience_data_2026-10-22_20-30-02__home_change_finetuned-models_Qwen-Qwen3-Embedding-0.6B_finetuned-on_education-scale1_2026-06-13_22:00:13.436906.db
 eduscience_data_2026-04-15_10-00-02__home_change_finetuned-models_microsoft-harrier-oss-v1-0.6b_finetuned-on_education-scale0.0001_2026-04-07_12:00:14.688578.db
 eduscience_data_2026-04-15_10-45-01__home_change_finetuned-models_microsoft-harrier-oss-v1-0.6b_finetuned-on_education-scale0.1_2026-04-07_22:00:13.682025.db
-missing: scale 1
+eduscience_data_2026-10-23_00-15-01__home_change_finetuned-models_microsoft-harrier-oss-v1-0.6b_finetuned-on_education-scale1_2026-06-23_07:00:12.856399.db
 
-*Ingestion launched for missing databases on 2026-10-22*
+
+
+*state on 2026-10-28*
 
 ## Validation stage 2 to run
-miniLM: nonFT, TODO: scale 0.0001 , 0.1, 1, 10
-mpnet: TODO: nonFT, scale 0.0001, 0.1
-Qwen-0.6b: TODO: nonFT, scale 0.0001, 0.1, 1
-harrier: TODO: nonFT, scale 0.0001, 0.1, 1
+miniLM: nonFT,  scale 0.0001 , 0.1 , 1 , 10
+mpnet:  nonFT, scale 0.0001, 0.1
+Qwen-0.6b:  nonFT, scale 0.0001, 0.1, 1
+harrier: nonFT, scale 0.0001, 0.1, 1
 
 ### To run validation
 *Change serving params in dhserver02*
 ```
+su change
 nano /home/change/rag-change/ragchange/config/local.yaml
+su dalco
+sudo systemctl restart gunicorn.service
 ```
 *run on dhserver03 with:*
 ```
 cd CHANGE_project
-nohup ../venv/bin/python3 validation_stage_2/benchmarking.py validation_stage_2/FOLDER_NAME/ >> validation_stage_2/FOLDER_NAME/log.log&
+FOLDER_NAME="result-monthDD-model-scale"
+mkdir validation_stage_2/$FOLDER_NAME
+nohup ../venv/bin/python3 validation_stage_2/benchmarking.py validation_stage_2/$FOLDER_NAME/ >> validation_stage_2/$FOLDER_NAME/log.log&
 ```

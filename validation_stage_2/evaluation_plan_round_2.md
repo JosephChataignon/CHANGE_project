@@ -41,7 +41,7 @@ We'll made a distribution plot of overlap between retrieved and original, then c
 We should measure top-1, top-5 and top-10 matches. We will run this with various fine-tuned and 
 non-fine-tuned models.
 TODO: Run script with various embedding models loaded, finetuned vs non-finetuned - deduct which to use for human eval.
-See progress in Models_and_db_state.md
+See progress in `Models_and_db_state.md`.
 
 ## III. Qualitative evaluation
 
