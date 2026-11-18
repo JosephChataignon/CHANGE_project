@@ -1,0 +1,26 @@
+FRAG search benchmark
+=====================
+
+Timestamp: 2026-10-20T07:47:21
+Queries evaluated: 4106 (2 skipped due to errors)
+
+Hit rates by overlap threshold (use this to choose the threshold for 'same document'):
+ threshold |   top-1   top-5  top-10
+       0.1 |   0.108   0.173   0.209
+       0.2 |   0.098   0.159   0.194
+       0.3 |   0.091   0.149   0.184
+       0.4 |   0.085   0.142   0.174
+       0.5 |   0.078   0.132   0.161
+       0.6 |   0.068   0.120   0.147
+       0.7 |   0.057   0.102   0.126
+       0.8 |   0.047   0.086   0.105
+       0.9 |   0.032   0.062   0.077
+
+At default threshold 0.5:
+  top_1: 0.078
+  top_5: 0.132
+  top_10: 0.161
+
+note:
+embedding_model: "sentence-transformers/all-MiniLM-L6-v2"
+vector_db_path: 'data/eduscience_data_2026-02-26_18-30-02_sentence-transformers_all-MiniLM-L6-v2.db'

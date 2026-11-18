@@ -1,0 +1,22 @@
+FRAG search benchmark
+=====================
+
+Timestamp: 2026-11-10T22:37:48
+Queries evaluated: 4096 (12 skipped due to errors)
+
+Hit rates by overlap threshold (use this to choose the threshold for 'same document'):
+ threshold |   top-1   top-5  top-10
+       0.1 |   0.001   0.002   0.004
+       0.2 |   0.001   0.002   0.004
+       0.3 |   0.001   0.002   0.004
+       0.4 |   0.001   0.002   0.002
+       0.5 |   0.001   0.001   0.001
+       0.6 |   0.001   0.001   0.001
+       0.7 |   0.001   0.001   0.001
+       0.8 |   0.000   0.000   0.001
+       0.9 |   0.000   0.000   0.000
+
+At default threshold 0.5:
+  top_1: 0.001
+  top_5: 0.001
+  top_10: 0.001
